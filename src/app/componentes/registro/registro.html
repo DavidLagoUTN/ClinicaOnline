@@ -1,0 +1,50 @@
+<div class="overlay" *ngIf="isLoading">
+  <app-loading></app-loading>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="registro-form">
+
+  <!-- Selector de tipo -->
+  <div class="form-bloque">
+    <label for="tipo">Tipo de registro</label>
+    <select [value]="tipoSeleccionado" (change)="actualizarTipo($event)">
+      <option value="" disabled selected>Seleccionar tipo...</option>
+      <option value="paciente">Paciente</option>
+      <option value="especialista">Especialista</option>
+      <option *ngIf="modoAdmin" value="admin">Administrador</option>
+    </select>
+  </div>
+
+  <!-- Campos visibles solo si hay tipo seleccionado -->
+  <ng-container *ngIf="tipoSeleccionado">
+
+    <div class="form-bloque">
+      <!-- Comunes -->
+      <input formControlName="nombre" placeholder="Nombre" />
+      <input formControlName="apellido" placeholder="Apellido" />
+      <input formControlName="edad" type="number" placeholder="Edad" />
+      <input formControlName="dni" placeholder="DNI" />
+      <!-- Obra social Paciente -->
+      <input *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
+      <!-- Especialidad Especialista -->
+      <select *ngIf="tipoSeleccionado === 'especialista'" formControlName="especialidad" (change)="verificarEspecialidad($event)">
+        <option value="" disabled selected>Seleccionar especialidad...</option>
+        <option *ngFor="let esp of especialidades" [value]="esp">{{ esp }}</option>
+        <option value="otro">Agregar nueva</option>
+      </select>
+      <input *ngIf="form.get('especialidad')?.value === 'otro'" formControlName="nuevaEspecialidad" placeholder="Nueva especialidad" />
+      <!-- Comunes -->
+      <input formControlName="mail" type="email" placeholder="Correo electrónico" />
+      <input formControlName="password" type="password" placeholder="Contraseña" />
+      <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin' ">Imagen de perfil</label>
+      <label *ngIf="tipoSeleccionado === 'paciente'">Imágenes de perfil</label>
+      <input type="file" (change)="onFileSelected($event, 'imagenPerfil')" />
+      <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Preview perfil" class="preview-img" />
+      <!-- Imagen extra Paciente -->
+      <input *ngIf="tipoSeleccionado === 'paciente'" type="file" (change)="onFileSelected($event, 'imagenPerfilExtra')" />
+      <img *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" [src]="imagenExtraPreview" alt="Preview adicional" class="preview-img" />
+    </div>
+
+    <button type="submit">Registrar</button>
+  </ng-container>
+</form>

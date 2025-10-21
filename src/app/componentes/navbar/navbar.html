@@ -1,0 +1,19 @@
+<div class="navbar"
+     [class.compacto]="hasScroll"
+     [style.--scrollbar-width.px]="scrollbarWidth">
+  <div class="navbar-left">
+    <button class="volver-btn" (click)="router.navigate(['/home'])">
+      <span class="navbar-icon">{{ mostrarVolver ? '◄' : '•' }}</span>
+      <span class="navbar-label">{{ mostrarVolver ? 'Volver' : 'Inicio' }}</span>
+    </button>
+  </div>
+
+  <div class="navbar-center">
+    <span class="titulo-central">{{ currentTitle }}</span>
+  </div>
+
+  <div class="navbar-right">
+    <a routerLink="/login">Ingresar</a>
+    <a routerLink="/registrar">Registrarse</a>
+  </div>
+</div>

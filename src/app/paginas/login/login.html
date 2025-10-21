@@ -1,0 +1,29 @@
+<!-- Overlay con componente de carga -->
+<div class="overlay" *ngIf="isLoading">
+  <app-loading></app-loading>
+</div>
+
+<app-navbar></app-navbar>
+
+<div class="app-container">
+  <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="login-form">
+    <h2>Ingresá tus datos</h2>
+
+    <input type="email" formControlName="email" placeholder="Correo electrónico" />
+    <input type="password" formControlName="password" placeholder="Contraseña" />
+
+    <button type="submit">Ingresar</button>
+  </form>
+
+  <div class="acciones-login">
+    <a routerLink="/registrar" class="link-acceso">¿No tenés una cuenta? Registrate</a>
+
+    <button type="button" (click)="quickFill('test@correo.com','abc123')">
+      Acceso rápido
+    </button>
+
+    <button type="button" (click)="quickFill('admin@admin.com','admin123')">
+      Acceso rápido Admin
+    </button>
+  </div>
+</div>
