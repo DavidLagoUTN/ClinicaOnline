@@ -9,6 +9,4 @@ import { Navbar } from "../../componentes/navbar/navbar";
   templateUrl: './registrar.html',
   styleUrl: './registrar.scss'
 })
-export class Registrar {
-
-}
+export class Registrar { }

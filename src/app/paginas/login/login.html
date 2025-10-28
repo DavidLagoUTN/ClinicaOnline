@@ -5,25 +5,28 @@
 
 <app-navbar></app-navbar>
 
-<div class="app-container">
-  <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="login-form">
-    <h2>Ingresá tus datos</h2>
+<h1 class="titulo">Ingresá tus datos</h1>
 
+<div class="app-container">
+  <!-- Botones de acceso rápido -->
+  <h2 class="titulo2">Accesos rápidos</h2>
+  <div class="quick-access" aria-label="Accesos rápidos">
+    <br><button *ngFor="let u of quickUsers" type="button" class="quick-btn" (click)="quickFill(u)" [title]="u.label">
+      <div class="quick-media">
+        <img class="quick-avatar" [src]="u.photoUrl" [alt]="u.label" />
+      </div>
+      <div class="quick-meta">
+        <span class="quick-name">{{ u.label }}</span>
+      </div>
+    </button>
+  </div>
+
+
+  <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="login-form">
     <input type="email" formControlName="email" placeholder="Correo electrónico" />
     <input type="password" formControlName="password" placeholder="Contraseña" />
-
     <button type="submit">Ingresar</button>
   </form>
 
-  <div class="acciones-login">
-    <a routerLink="/registrar" class="link-acceso">¿No tenés una cuenta? Registrate</a>
-
-    <button type="button" (click)="quickFill('test@correo.com','abc123')">
-      Acceso rápido
-    </button>
-
-    <button type="button" (click)="quickFill('admin@admin.com','admin123')">
-      Acceso rápido Admin
-    </button>
-  </div>
+  <a routerLink="/registrar" class="link-acceso">¿No tenés una cuenta? Registrate</a>
 </div>

@@ -1,4 +1,4 @@
-<div class="overlay" *ngIf="isLoading">
+<div *ngIf="isLoading">
   <app-loading></app-loading>
 </div>
 
@@ -7,8 +7,8 @@
   <!-- Selector de tipo -->
   <div class="form-bloque">
     <label for="tipo">Tipo de registro</label>
-    <select [value]="tipoSeleccionado" (change)="actualizarTipo($event)">
-      <option value="" disabled selected>Seleccionar tipo...</option>
+    <select id="tipo" [value]="tipoSeleccionado" (change)="actualizarTipo($event)">
+      <option value="" disabled>Seleccionar tipo...</option>
       <option value="paciente">Paciente</option>
       <option value="especialista">Especialista</option>
       <option *ngIf="modoAdmin" value="admin">Administrador</option>
@@ -17,34 +17,84 @@
 
   <!-- Campos visibles solo si hay tipo seleccionado -->
   <ng-container *ngIf="tipoSeleccionado">
-
     <div class="form-bloque">
-      <!-- Comunes -->
-      <input formControlName="nombre" placeholder="Nombre" />
-      <input formControlName="apellido" placeholder="Apellido" />
-      <input formControlName="edad" type="number" placeholder="Edad" />
-      <input formControlName="dni" placeholder="DNI" />
-      <!-- Obra social Paciente -->
+      <!-- Campos comunes -->
+      <input id="nombre" formControlName="nombre" placeholder="Nombre" />
+      <input id="apellido" formControlName="apellido" placeholder="Apellido" />
+      <input id="edad" formControlName="edad" type="number" placeholder="Edad" />
+      <input id="dni" formControlName="dni" placeholder="DNI" />
+
+      <!-- Obra social (paciente) -->
       <input *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
-      <!-- Especialidad Especialista -->
-      <select *ngIf="tipoSeleccionado === 'especialista'" formControlName="especialidad" (change)="verificarEspecialidad($event)">
-        <option value="" disabled selected>Seleccionar especialidad...</option>
-        <option *ngFor="let esp of especialidades" [value]="esp">{{ esp }}</option>
-        <option value="otro">Agregar nueva</option>
-      </select>
-      <input *ngIf="form.get('especialidad')?.value === 'otro'" formControlName="nuevaEspecialidad" placeholder="Nueva especialidad" />
-      <!-- Comunes -->
+
+      <!-- Especialidades (especialista) -->
+      <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque">
+        <label>Especialidades</label>
+
+        <!-- Lista de especialidades con checkbox -->
+        <div *ngFor="let esp of especialidades">
+          <label>
+            <input type="checkbox" [value]="esp" (change)="toggleEspecialidad(esp, $event)"
+              [checked]="form.get('especialidadesSeleccionadas')?.value?.includes(esp)" />
+            {{ esp }}
+          </label>
+        </div>
+
+        <!-- Botón para agregar nueva -->
+        <button type="button" (click)="agregarCampoNuevaEspecialidad()" *ngIf="!form.get('nuevaEspecialidad')">
+          Agregar nueva especialidad
+        </button>
+
+        <!-- Input para escribir nueva -->
+        <div *ngIf="form.get('nuevaEspecialidad')">
+          <input formControlName="nuevaEspecialidad" placeholder="Nueva especialidad..." />
+          <button type="button" (click)="agregarNuevaEspecialidad()">Confirmar</button>
+        </div>
+      </div>
+
+
+
+      <!-- Mail y contraseña -->
       <input formControlName="mail" type="email" placeholder="Correo electrónico" />
       <input formControlName="password" type="password" placeholder="Contraseña" />
-      <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin' ">Imagen de perfil</label>
+
+      <!-- Labels para imágenes -->
+      <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin'">Imagen de perfil</label>
       <label *ngIf="tipoSeleccionado === 'paciente'">Imágenes de perfil</label>
-      <input type="file" (change)="onFileSelected($event, 'imagenPerfil')" />
-      <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Preview perfil" class="preview-img" />
-      <!-- Imagen extra Paciente -->
-      <input *ngIf="tipoSeleccionado === 'paciente'" type="file" (change)="onFileSelected($event, 'imagenPerfilExtra')" />
-      <img *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" [src]="imagenExtraPreview" alt="Preview adicional" class="preview-img" />
+
+      <!-- Contenedor único para ambas imágenes / inputs SIN subcontendores -->
+      <div class="images-container">
+        <div class="image-slot">
+          <!-- Input 1 (visible si no hay preview) -->
+          <label *ngIf="!imagenPreview" class="file-label">
+            <input type="file" accept="image/*" (change)="onFileSelected($event, 'imagenPerfil')" />
+            <span>Examinar...</span>
+          </label>
+
+          <!-- Preview 1 (visible si hay imagen) -->
+          <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Preview perfil" class="preview-img" />
+          <button *ngIf="imagenPreview" type="button" class="btn-trash" aria-label="Eliminar imagen de perfil"
+            (click)="removeImage('imagenPerfil')">🗑</button>
+        </div>
+
+        <div class="image-slot">
+          <!-- Input 2 (extra) - mostrado solo para paciente y si no hay preview extra -->
+          <label *ngIf="tipoSeleccionado === 'paciente' && !imagenExtraPreview" class="file-label">
+            <input type="file" accept="image/*" (change)="onFileSelected($event, 'imagenPerfilExtra')" />
+            <span>Examinar...</span>
+          </label>
+
+          <!-- Preview 2 (extra) - mostrado solo para paciente y si existe -->
+          <img *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" [src]="imagenExtraPreview"
+            alt="Preview adicional" class="preview-img" />
+          <button *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" type="button" class="btn-trash"
+            aria-label="Eliminar imagen adicional" (click)="removeImage('imagenPerfilExtra')">🗑</button>
+        </div>
+      </div>
+      <!-- fin images-container -->
+
     </div>
 
-    <button type="submit">Registrar</button>
+    <button type="submit" class="btn-primary">Registrar</button>
   </ng-container>
 </form>

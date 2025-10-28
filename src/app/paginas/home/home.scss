@@ -19,7 +19,6 @@ button {
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  margin: 1rem;
   border-radius: 4px;
   font-size: 1.1rem;
   cursor: pointer;
@@ -28,4 +27,28 @@ button {
   &:hover {
     background-color: #0d3f8f;
   }
+}
+
+.app-container {
+  background-image: url('/assets/login.png');
+  max-width: 600px;
+}
+
+h2 {
+  color: #092b5e;
+}
+
+.profile-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.profile-img {
+  width: 96px;
+  height: 128px;
+  object-fit: cover;
+  border: 2px solid rgba(0, 0, 0, 0.39);
+  display: block;
+  border-radius: 0;
 }

@@ -1,7 +1,9 @@
-import { Component, HostListener, Renderer2, OnInit } from '@angular/core';
+import { Component, HostListener, Renderer2, OnInit, inject } from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../servicios/auth';
+import { Firestore, doc, getDoc } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-navbar',
@@ -15,33 +17,83 @@ export class Navbar implements OnInit {
   scrollbarWidth = 0;
   currentTitle = '';
 
-  constructor(public router: Router, private renderer: Renderer2) {}
+  // Auth / UI state
+  nombreUsuario: string | null = null;
+  isLoggedIn = false;
+  esAdmin = false;
+
+  private firestore: Firestore = inject(Firestore);
+
+  constructor(
+    public router: Router,
+    private renderer: Renderer2,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.checkScroll();
-    this.actualizarTitulo(this.router.url); // inicial
+    this.actualizarTitulo(this.router.url);
+    this.syncUserInfo();
 
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.actualizarTitulo(event.urlAfterRedirects);
+        this.syncUserInfo();
       });
+
+    // Si AuthService expone un observable o callback para cambios de sesión, suscribirse.
+    // Intentamos suscribir a `onAuthStateChanged` o a `user$` si existen.
+    if ((this.authService as any).onAuthStateChanged) {
+      (this.authService as any).onAuthStateChanged(() => this.syncUserInfo());
+    } else if ((this.authService as any).user$ && (this.authService as any).user$.subscribe) {
+      (this.authService as any).user$.subscribe(() => this.syncUserInfo());
+    }
   }
+
+  async syncUserInfo(): Promise<void> {
+    const user = typeof this.authService.getUser === 'function' ? this.authService.getUser() : null;
+    this.isLoggedIn = !!user?.uid;
+    this.nombreUsuario = (this.authService as any).nombreUsuario ?? null;
+
+    if (!this.isLoggedIn) {
+      this.esAdmin = false;
+      this.nombreUsuario = null;
+      return;
+    }
+
+    try {
+      const ref = doc(this.firestore, 'usuarios', user!.uid);
+      const snapshot = await getDoc(ref);
+      const data = snapshot.data();
+      this.esAdmin = !!data?.['admin'];
+    } catch {
+      this.esAdmin = false;
+    }
+  }
+
+  logout(): void {
+  this.authService.logout().then(() => {
+    this.router.navigate(['/login']);
+  }).catch(() => {
+    // en caso de error, igualmente redirigimos
+    this.router.navigate(['/login']);
+  });
+}
 
   @HostListener('window:scroll')
   @HostListener('window:resize')
   @HostListener('window:load')
   checkScroll(): void {
-  const doc = document.documentElement;
-  this.hasScroll = doc.scrollHeight > doc.clientHeight;
-  this.scrollbarWidth = this.getScrollbarWidth();
+    const docEl = document.documentElement;
+    this.hasScroll = docEl.scrollHeight > docEl.clientHeight;
+    this.scrollbarWidth = this.getScrollbarWidth();
 
-  const navbar = document.querySelector('.navbar');
-  if (navbar) {
-    this.renderer.setStyle(navbar, '--scrollbar-width', `${this.scrollbarWidth}px`);
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+      this.renderer.setStyle(navbar, '--scrollbar-width', `${this.scrollbarWidth}px`);
+    }
   }
-}
-
 
   get mostrarVolver(): boolean {
     return this.router.url !== '/home';
@@ -76,7 +128,7 @@ export class Navbar implements OnInit {
       '/perfil': 'Mi perfil'
     };
 
-    const ruta = url.split('?')[0]; // eliminar query params
+    const ruta = url.split('?')[0];
     this.currentTitle = mapa[ruta] || 'Clínica Online';
   }
 }

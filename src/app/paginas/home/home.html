@@ -1,8 +1,31 @@
 <app-navbar></app-navbar>
 
-<div class="main-content">
-  <h1>Bienvenido a la Clínica Online</h1>
-  <p>Accedé a tu cuenta o registrate para comenzar</p>
-  <button routerLink="/login">Ingresar</button>
-  <button routerLink="/registrar">Registrarse</button>
+<!-- Título principal (igual que antes) -->
+<h1 class="titulo">Bienvenido a la Clínica Online</h1>
+
+<!-- Contenedor principal (se mantiene la clase original) -->
+<div class="app-container">
+  <!-- Mensaje y acciones para usuario logueado -->
+  <ng-container *ngIf="isLoggedIn; else guestView">
+    <h2 *ngIf="role === 'paciente'">Hola, {{ displayName }} ¿En qué podemos ayudarte hoy?</h2>
+    <h2 *ngIf="role === 'especialista'">Hola, {{ displayName }} ¡Nos complace que trabajes para nosotros!</h2>
+    <h2 *ngIf="role === 'admin'">Hola, {{ displayName }} Están a tu disposición las tareas administrativas que desees
+      realizar</h2>
+
+    <!-- Si querés botones para navegar según rol (heredan estilos existentes) -->
+    <div class="acciones-logued">
+      <div class="profile-preview" *ngIf="photoUrl">
+        <img [src]="photoUrl" [alt]="displayName" class="profile-img" />
+      </div>
+      <button routerLink="/turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
+      <button routerLink="/perfil" *ngIf="role !== 'paciente'">Ir al perfil</button>
+    </div>
+  </ng-container>
+
+  <!-- Vista para invitados: mantiene exactamente el texto y botones que tenías -->
+  <ng-template #guestView>
+    <h2>Accedé a tu cuenta o registrate para comenzar</h2>
+    <button routerLink="/login">Ingresar</button>
+    <button routerLink="/registrar">Registrarse</button>
+  </ng-template>
 </div>

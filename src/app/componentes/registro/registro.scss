@@ -1,56 +1,149 @@
 .registro-form {
+  /* background */
+  background-image: url('/assets/registro.jpg'); /* o 'assets/registro.jpg' según build */
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: scroll;
+
+  /* layout */
+  position: relative;
+  overflow: hidden;          /* para que el ::before y border-radius recorten */
+  color: inherit;
+
+  /* visual */
   display: flex;
   flex-direction: column;
   gap: 2rem;
   padding: 2rem;
-  background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   max-width: 600px;
   margin: auto;
-
-  .form-bloque {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  label {
-    font-weight: bold;
-    margin-top: 0.5rem;
-  }
-
-  input, select {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-  }
-
-  button {
-    align-self: flex-end;
-    padding: 0.75rem 1.5rem;
-    background-color: #00aae4;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-
-    &:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-  }
+  border: 3px solid #104fa7;
 }
 
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+/* overlay semitransparente debajo del contenido */
+.registro-form::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.105);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0; /* debajo del contenido */
+}
+
+/* contenido por encima del overlay */
+.registro-form > * {
+  position: relative;
+  z-index: 1;
+}
+
+.form-bloque { display: flex; flex-direction: column; gap: 0.5rem; }
+
+label {
+  color: #fff;
+  font-weight: bold;
+  padding: 0.3rem;
+  border: 1px solid rgb(1, 49, 117);
+  border-radius: 6px;
+  background: rgb(0, 71, 143);
+  width:fit-content;
+}
+
+/* boton principal */
+.btn-primary {
+  background: #104ea7;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color .3s;
   width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 9999;
+}
+.btn-primary:hover { background: #0d3f8f; }
+
+/* contenedor principal de imágenes */
+.images-container {
   display: flex;
-  justify-content: center;
+  gap: 12px;
   align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+/* cada slot ocupa sólo lo necesario (sin crecer) */
+.image-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  flex: 0 0 auto;            /* NO crecer ni encoger */
+  width: auto;
+  max-width: none;
+  border: none;               /* por defecto sin borde */
+}
+
+/* mostrar borde sólo si existe una imagen dentro (requiere :has) */
+.image-slot:has(img.preview-img) {
+  border: 3px solid #104fa7;
+  background: hsla(215, 64%, 42%, 0.900);
+}
+
+/* label "Examinar..." compacto */
+.file-label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border: 2px dashed rgba(0,0,0,0.12);
+  border-radius: 6px;
+  background: hsla(215, 83%, 36%, 0.900);
+}
+.file-label input[type="file"] { display: none; }
+
+/* imagen preview: tamaño controlado y no se estira */
+.preview-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 160px;   /* ajustar según necesidad */
+  min-width: 60px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* tachito junto a la imagen, compacto */
+.btn-trash {
+  background: #a71010;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 6px;
+  padding: 0.2rem 0.3rem;
+  cursor: pointer;
+  color: #333;
+  font-size: 30px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  flex: 0 0 auto;
+  margin: auto;
+  margin-right: 0.5rem;
+}
+
+/* móvil: permitir apilar pero sin forzar slots a 100% ancho */
+@media (max-width: 720px) {
+  .images-container { gap: 10px; }
+  .image-slot { flex: 0 1 auto; width: auto; max-width: 100%; }
+  .preview-img { max-width: 100%; min-width: 0; }
 }

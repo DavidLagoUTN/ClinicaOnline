@@ -13,7 +13,16 @@
   </div>
 
   <div class="navbar-right">
-    <a routerLink="/login">Ingresar</a>
-    <a routerLink="/registrar">Registrarse</a>
+    <ng-container *ngIf="isLoggedIn; else guestLinks">
+      <div class="usuario-box">
+        <span class="nombre">{{ nombreUsuario }}</span>
+        <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+      </div>
+    </ng-container>
+
+    <ng-template #guestLinks>
+      <a routerLink="/login">Ingresar</a>
+      <a routerLink="/registrar">Registrarse</a>
+    </ng-template>
   </div>
 </div>

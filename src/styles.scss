@@ -15,9 +15,6 @@ body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
   color: #333;
-
-  // Fondo base beige
-
   // Sistema de color de Angular Material
   color-scheme: light;
   color: var(--mat-sys-on-surface);
@@ -27,7 +24,8 @@ body {
 html,
 body {
   height: 100%;
-  background-color: #fdf6ec; // beige cálido
+  background: url('assets/principal.png') no-repeat center center fixed;
+  background-color: #FBE6C9; //fondo color durazno
   margin: 0;
   padding: 0;
 }
@@ -45,16 +43,67 @@ h3 {
 }
 
 button {
-  background-color: #00aae4;
-  color: white;
+  align-self: center;
+  background: #104ea7;
+  color: #fff;
   border: none;
   padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
   border-radius: 4px;
-  font-weight: bold;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: darken(#00aae4, 10%);
+  transition: background-color .3s;
+  width: fit-content;
+}
+  
+  button:hover{
+    background: #0d3f8f;
   }
+
+  input, select {
+  padding: 0.5rem;
+  border: 1px solid rgb(11, 55, 118);
+  border-radius: 6px;
+  background: hsla(215, 64%, 42%, 0.950);
+  line-height: 1;
+  color: white;
+  font-weight: bolder;
+}
+
+.app-container {
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: scroll;
+  position: relative;
+  overflow: hidden;          
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  min-width: 470px;
+  max-width: 910px;
+  margin: auto;
+  border: 3px solid #104fa7;
+}
+
+.titulo {
+  width: fit-content;
+  margin: 1rem auto 0 auto;
+  padding: 1rem 1rem 1rem 1rem;
+  border-top: 3px solid #104ea7;
+  border-left: 3px solid #104ea7;
+  border-right: 3px solid #104ea7;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background-color: #329fca;
 }
