@@ -1,23 +1,29 @@
 <div class="navbar"
      [class.compacto]="hasScroll"
      [style.--scrollbar-width.px]="scrollbarWidth">
+
+  <!-- IZQUIERDA: Inicio + Usuarios (solo si es admin) -->
   <div class="navbar-left">
     <button class="volver-btn" (click)="router.navigate(['/home'])">
       <span class="navbar-icon">{{ mostrarVolver ? '◄' : '•' }}</span>
       <span class="navbar-label">{{ mostrarVolver ? 'Volver' : 'Inicio' }}</span>
     </button>
+
+    <button *ngIf="isLoggedIn && esAdmin" class="usuarios-btn" (click)="router.navigate(['/usuarios'])">
+      <span class="navbar-label">Usuarios</span>
+    </button>
   </div>
 
+  <!-- CENTRO: Título dinámico -->
   <div class="navbar-center">
     <span class="titulo-central">{{ currentTitle }}</span>
   </div>
 
+  <!-- DERECHA: Sesión activa o enlaces de invitado -->
   <div class="navbar-right">
     <ng-container *ngIf="isLoggedIn; else guestLinks">
-      <div class="usuario-box">
-        <span class="nombre">{{ nombreUsuario }}</span>
+        <span class="nombre">{{ nombreUsuario }} {{apellidoUsuario}}</span>
         <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
-      </div>
     </ng-container>
 
     <ng-template #guestLinks>

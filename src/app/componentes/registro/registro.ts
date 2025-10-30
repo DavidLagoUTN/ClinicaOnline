@@ -7,7 +7,8 @@ import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { LoadingComponent } from "../loading/loading";
-import { supabase } from '../../servicios/supabase'
+import { supabase } from '../../servicios/supabase';
+import { Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-registro',
@@ -18,6 +19,12 @@ import { supabase } from '../../servicios/supabase'
 })
 export class Registro implements OnInit {
   @Input() modoAdmin: boolean = false;
+
+  @Output() cerrar = new EventEmitter<void>();
+
+  cancelar(): void {
+    this.cerrar.emit();
+  }
   isLoading = false;
 
   form!: FormGroup;
@@ -39,7 +46,7 @@ export class Registro implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.form = this.fb.group({});
+    this.crearFormulario();
   }
 
   actualizarTipo(event: Event): void {
@@ -58,10 +65,12 @@ export class Registro implements OnInit {
     const soloNumeros = /^\d+$/;
     const dniRegex = /^\d{8,}$/;
 
+    const edadMinima = this.tipoSeleccionado === 'paciente' ? 0 : 18;
+
     const base = {
       nombre: ['', [Validators.required, Validators.pattern(soloLetras)]],
       apellido: ['', [Validators.required, Validators.pattern(soloLetras)]],
-      edad: ['', [Validators.required, Validators.pattern(soloNumeros), Validators.min(1), Validators.max(120)]],
+      edad: ['', [Validators.required, Validators.pattern(soloNumeros), Validators.min(edadMinima), Validators.max(120)]],
       dni: ['', [Validators.required, Validators.pattern(dniRegex)]],
       mail: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
@@ -232,12 +241,26 @@ export class Registro implements OnInit {
     }
   }
 
+  seleccionarTipo(tipo: 'paciente' | 'especialista' | 'admin'): void {
+    if (this.tipoSeleccionado === tipo) return;
+    this.tipoSeleccionado = tipo;
+    this.crearFormulario();
+
+    // small UI refresh para que Angular re-renderice previews/inputs
+    setTimeout(() => {
+      document.body.offsetHeight;
+      window.dispatchEvent(new Event('resize'));
+    }, 0);
+  }
+
+
 
 
   async onSubmit(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 0)); //renderizar rápidamente loading
     this.isLoading = true;
     const c = this.form.controls;
+    const edadMinima = this.tipoSeleccionado === 'paciente' ? 0 : 18;
 
     // Validación: si todos los campos están vacíos
     const valores = this.form.getRawValue();
@@ -276,7 +299,7 @@ export class Registro implements OnInit {
     }
 
     if (c['edad'].hasError('min') || c['edad'].hasError('max')) {
-      this.snackBar.open('La edad debe estar entre 1 y 120 años', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      this.snackBar.open(`La edad debe estar entre ${edadMinima} y 120 años`, undefined, { duration: 3000, panelClass: ['mat-warn'] });
       this.isLoading = false;
       return;
     }

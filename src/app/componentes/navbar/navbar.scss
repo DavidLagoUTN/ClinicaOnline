@@ -1,5 +1,5 @@
 // Variables
-$navbar-side-width: 180px;
+$navbar-side-width: 380px;
 
 .navbar {
   display: grid;
@@ -39,7 +39,7 @@ $navbar-side-width: 180px;
   font-family: 'Segoe UI', sans-serif;
 }
 
-.volver-btn {
+.volver-btn, .usuarios-btn {
   background: none;
   border-radius: 4px;      
   font-size: 1rem;
@@ -84,24 +84,18 @@ h1 {
 }
 
 .navbar-right {
-  justify-content: flex-start;
-}
-
-.usuario-box {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
 .nombre {
   color: white;
   font-weight: 600;
   font-size: 0.95rem;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
-}
+  max-width: 100%;}
 
 .btn-logout {
   background: transparent;

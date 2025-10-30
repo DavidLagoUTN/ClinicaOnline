@@ -1,34 +1,48 @@
 <div *ngIf="isLoading">
   <app-loading></app-loading>
 </div>
-
+<h1 class="titulo">Complete los campos</h1>
 <form [formGroup]="form" (ngSubmit)="onSubmit()" class="registro-form">
+  <!-- Selector visual por imagen -->
+  <div class="tipo-grid" role="radiogroup" aria-label="Tipo de registro">
+    <button type="button" class="tipo-card" role="radio" [attr.aria-checked]="tipoSeleccionado === 'paciente'"
+      (click)="seleccionarTipo('paciente')" (keydown.enter)="seleccionarTipo('paciente')"
+      (keydown.space)="seleccionarTipo('paciente')" [class.selected]="tipoSeleccionado === 'paciente'">
+      <img src="/assets/registroPaciente.png" alt="Registro Paciente" class="tipo-img" />
+      <div class="tipo-label">Paciente</div>
+    </button>
 
-  <!-- Selector de tipo -->
-  <div class="form-bloque">
-    <label for="tipo">Tipo de registro</label>
-    <select id="tipo" [value]="tipoSeleccionado" (change)="actualizarTipo($event)">
-      <option value="" disabled>Seleccionar tipo...</option>
-      <option value="paciente">Paciente</option>
-      <option value="especialista">Especialista</option>
-      <option *ngIf="modoAdmin" value="admin">Administrador</option>
-    </select>
+    <button type="button" class="tipo-card" role="radio" [attr.aria-checked]="tipoSeleccionado === 'especialista'"
+      (click)="seleccionarTipo('especialista')" (keydown.enter)="seleccionarTipo('especialista')"
+      (keydown.space)="seleccionarTipo('especialista')" [class.selected]="tipoSeleccionado === 'especialista'">
+      <img src="/assets/registroEspecialista.png" alt="Registro Especialista" class="tipo-img" />
+      <div class="tipo-label">Especialista</div>
+    </button>
+
+    <button *ngIf="modoAdmin" type="button" class="tipo-card" role="radio"
+      [attr.aria-checked]="tipoSeleccionado === 'admin'" (click)="seleccionarTipo('admin')"
+      (keydown.enter)="seleccionarTipo('admin')" (keydown.space)="seleccionarTipo('admin')"
+      [class.selected]="tipoSeleccionado === 'admin'">
+      <img src="/assets/registroAdmin.png" alt="Registro Administrador" class="tipo-img" />
+      <div class="tipo-label">Administrador</div>
+    </button>
   </div>
+
 
   <!-- Campos visibles solo si hay tipo seleccionado -->
   <ng-container *ngIf="tipoSeleccionado">
     <div class="form-bloque">
       <!-- Campos comunes -->
-      <input id="nombre" formControlName="nombre" placeholder="Nombre" />
-      <input id="apellido" formControlName="apellido" placeholder="Apellido" />
-      <input id="edad" formControlName="edad" type="number" placeholder="Edad" />
-      <input id="dni" formControlName="dni" placeholder="DNI" />
+      <input class = "campo" id="nombre" formControlName="nombre" placeholder="Nombre" />
+      <input class = "campo" id="apellido" formControlName="apellido" placeholder="Apellido" />
+      <input class = "campo" id="edad" formControlName="edad" type="number" placeholder="Edad" />
+      <input class = "campo" id="dni" formControlName="dni" placeholder="DNI" />
 
       <!-- Obra social (paciente) -->
-      <input *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
+      <input class = "campo" *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
 
       <!-- Especialidades (especialista) -->
-      <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque">
+      <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque-especialidades">
         <label>Especialidades</label>
 
         <!-- Lista de especialidades con checkbox -->
@@ -55,8 +69,8 @@
 
 
       <!-- Mail y contraseña -->
-      <input formControlName="mail" type="email" placeholder="Correo electrónico" />
-      <input formControlName="password" type="password" placeholder="Contraseña" />
+      <input class = "campo" formControlName="mail" type="email" placeholder="Correo electrónico" />
+      <input class = "campo" formControlName="password" type="password" placeholder="Contraseña" />
 
       <!-- Labels para imágenes -->
       <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin'">Imagen de perfil</label>
@@ -98,3 +112,6 @@
     <button type="submit" class="btn-primary">Registrar</button>
   </ng-container>
 </form>
+<button type="button" class="btn-volverAUsuarios" *ngIf="modoAdmin" (click)="cancelar()">
+  Volver a la lista de usuarios
+</button>

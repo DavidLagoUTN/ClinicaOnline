@@ -1,6 +1,7 @@
 .registro-form {
   /* background */
-  background-image: url('/assets/registro.jpg'); /* o 'assets/registro.jpg' según build */
+  background-image: url('/assets/registro.jpg');
+  /* o 'assets/registro.jpg' según build */
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -8,7 +9,8 @@
 
   /* layout */
   position: relative;
-  overflow: hidden;          /* para que el ::before y border-radius recorten */
+  overflow: hidden;
+  /* para que el ::before y border-radius recorten */
   color: inherit;
 
   /* visual */
@@ -17,7 +19,7 @@
   gap: 2rem;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   margin: auto;
   border: 3px solid #104fa7;
@@ -31,16 +33,30 @@
   background: rgba(255, 255, 255, 0.105);
   pointer-events: none;
   border-radius: inherit;
-  z-index: 0; /* debajo del contenido */
+  z-index: 0;
+  /* debajo del contenido */
 }
 
 /* contenido por encima del overlay */
-.registro-form > * {
+.registro-form>* {
   position: relative;
   z-index: 1;
 }
 
-.form-bloque { display: flex; flex-direction: column; gap: 0.5rem; }
+.form-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.form-bloque-especialidades {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: auto;
+  width: 53%;
+}
 
 label {
   color: #fff;
@@ -49,7 +65,13 @@ label {
   border: 1px solid rgb(1, 49, 117);
   border-radius: 6px;
   background: rgb(0, 71, 143);
-  width:fit-content;
+  width: fit-content;
+}
+
+.campo {
+  display: block;
+  margin: auto;
+  width: 50%;
 }
 
 /* boton principal */
@@ -58,21 +80,27 @@ label {
   color: #fff;
   border: none;
   padding: 0.75rem 1.5rem;
-  margin-top: 1rem;
   border-radius: 4px;
   font-size: 1.1rem;
   cursor: pointer;
   transition: background-color .3s;
-  width: 100%;
+  width: 35%;
 }
-.btn-primary:hover { background: #0d3f8f; }
+
+button {
+  display: block;
+  margin:auto;
+  margin-top: 0.5rem;
+}
+
+.btn-primary:hover {
+  background: #0d3f8f;
+}
 
 /* contenedor principal de imágenes */
 .images-container {
   display: flex;
-  gap: 12px;
   align-items: center;
-  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
@@ -83,13 +111,18 @@ label {
   gap: 8px;
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
-  flex: 0 0 auto;            /* NO crecer ni encoger */
+  flex: 0 0 auto;
+  /* NO crecer ni encoger */
   width: auto;
   max-width: none;
-  border: none;               /* por defecto sin borde */
+  border: none;
+  margin-left: 6px;
+  /* por defecto sin borde */
 }
+
+
 
 /* mostrar borde sólo si existe una imagen dentro (requiere :has) */
 .image-slot:has(img.preview-img) {
@@ -105,18 +138,22 @@ label {
   gap: 8px;
   cursor: pointer;
   padding: 6px 10px;
-  border: 2px dashed rgba(0,0,0,0.12);
+  border: 2px dashed rgba(0, 0, 0, 0.12);
   border-radius: 6px;
   background: hsla(215, 83%, 36%, 0.900);
 }
-.file-label input[type="file"] { display: none; }
+
+.file-label input[type="file"] {
+  display: none;
+}
 
 /* imagen preview: tamaño controlado y no se estira */
 .preview-img {
   display: block;
   width: auto;
   height: auto;
-  max-width: 160px;   /* ajustar según necesidad */
+  max-width: 160px;
+  /* ajustar según necesidad */
   min-width: 60px;
   object-fit: contain;
   border-radius: 6px;
@@ -125,7 +162,7 @@ label {
 /* tachito junto a la imagen, compacto */
 .btn-trash {
   background: #a71010;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 6px;
   padding: 0.2rem 0.3rem;
   cursor: pointer;
@@ -135,15 +172,102 @@ label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   flex: 0 0 auto;
   margin: auto;
   margin-right: 0.5rem;
 }
 
+.btn-volverAUsuarios {
+  display: block;
+  margin: 2rem auto;
+}
+
+
 /* móvil: permitir apilar pero sin forzar slots a 100% ancho */
 @media (max-width: 720px) {
-  .images-container { gap: 10px; }
-  .image-slot { flex: 0 1 auto; width: auto; max-width: 100%; }
-  .preview-img { max-width: 100%; min-width: 0; }
+  .images-container {
+    gap: 10px;
+  }
+
+  .image-slot {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .preview-img {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+
+/* selector visual por imagen: reutiliza las medidas de quick-access/quick-btn */
+.tipo-grid {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: nowrap;
+  margin-bottom: 1rem;
+  margin: auto;
+}
+
+/* tarjeta clicable que se comporta como botón */
+.tipo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140px;
+  min-width: 140px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  padding: 0.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  border-radius: 0;
+  transition: background-color 0.12s ease, transform 0.06s ease;
+  outline: none;
+}
+
+/* imagen dentro de la tarjeta: ocupa contenedor y mantiene proporción vertical */
+.tipo-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  background: #47a7cd;
+}
+
+/* etiqueta debajo de la imagen */
+.tipo-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding-top: 0.4rem;
+  color: #104fa7;
+}
+
+/* estilo visual para la tarjeta seleccionada */
+.tipo-card.selected {
+  background: rgb(93, 137, 198);
+  border-color: rgba(16, 78, 167, 0.2);
+  box-shadow: 0 2px 6px rgba(16, 78, 167, 0.06);
+}
+
+/* focus styles para accesibilidad del teclado */
+.tipo-card:focus {
+  box-shadow: 0 0 0 3px rgba(16, 78, 167, 0.12);
+}
+
+/* responsive: reducir ancho en pantallas pequeñas */
+@media (max-width: 640px) {
+  .tipo-card {
+    width: 120px;
+    min-width: 120px;
+  }
+
+  .tipo-img {
+    height: 120px;
+  }
 }

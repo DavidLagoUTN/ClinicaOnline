@@ -48,8 +48,10 @@ export class Home implements OnInit {
         if (snap.exists()) {
           const data = snap.data() as Record<string, any>;
 
-          // displayName preferente: nombre del doc > email del user > 'Usuario'
-          this.displayName = (data['nombre'] as string) || user!.email || 'Usuario';
+          const nombre = data['nombre'] || '';
+          const apellido = data['apellido'] || '';
+          this.displayName = `${nombre} ${apellido}`.trim() || user!.email || 'Usuario';
+
 
           // role: respetar campo tipo o campo admin; fallback a paciente
           const tipo = (data['tipo'] as string) || '';

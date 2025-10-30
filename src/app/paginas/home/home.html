@@ -9,7 +9,7 @@
   <ng-container *ngIf="isLoggedIn; else guestView">
     <h2 *ngIf="role === 'paciente'">Hola, {{ displayName }} ¿En qué podemos ayudarte hoy?</h2>
     <h2 *ngIf="role === 'especialista'">Hola, {{ displayName }} ¡Nos complace que trabajes para nosotros!</h2>
-    <h2 *ngIf="role === 'admin'">Hola, {{ displayName }} Están a tu disposición las tareas administrativas que desees
+    <h2 *ngIf="role === 'admin'">Hola, {{ displayName }}. Están a tu disposición las tareas administrativas que desees
       realizar</h2>
 
     <!-- Si querés botones para navegar según rol (heredan estilos existentes) -->

@@ -1,0 +1,48 @@
+<app-navbar></app-navbar>
+<ng-container *ngIf="!mostrarRegistro">
+  <h1 class="titulo">Usuarios del sistema</h1>
+  <div class="app-container">
+
+    <div class="overlay" *ngIf="loading">
+      <app-loading></app-loading>
+    </div>
+
+    <table *ngIf="!loading" class="usuarios-table">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Edad</th>
+          <th>DNI</th>
+          <th>Correo electrónico</th>
+          <th>Tipo</th>
+          <th>Acceso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of usuarios">
+          <td>
+            <img [src]="u.imagenPerfil || u.imagenPerfilExtra || '/assets/default-avatar.png'" alt="Foto"
+              class="mini-avatar" />
+          </td>
+          <td>{{ u.nombre }}</td>
+          <td>{{ u.apellido }}</td>
+          <td>{{ u.edad }}</td>
+          <td>{{ u.dni }}</td>
+          <td>{{ u.mail }}</td>
+          <td>{{ u.tipo === 'admin' ? 'administrador' : u.tipo }}</td>
+          <td>
+            <button *ngIf="u.tipo === 'especialista'" (click)="toggleAprobacion(u)"
+              [ngClass]="u.aprobadoPorAdmin ? 'btn-inhabilitar' : 'btn-habilitar'">
+              {{ u.aprobadoPorAdmin ? 'Inhabilitar' : 'Habilitar' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <button class="btn-generar" (click)="generarNuevoUsuario()">Generar nuevo usuario</button>
+</ng-container>
+
+<app-registro *ngIf="mostrarRegistro" [modoAdmin]="true" (cerrar)="cerrarRegistro()"></app-registro>

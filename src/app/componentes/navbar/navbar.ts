@@ -19,8 +19,10 @@ export class Navbar implements OnInit {
 
   // Auth / UI state
   nombreUsuario: string | null = null;
+  apellidoUsuario: string | null = null;
   isLoggedIn = false;
   esAdmin = false;
+  tipoUsuario: string = '';
 
   private firestore: Firestore = inject(Firestore);
 
@@ -54,11 +56,11 @@ export class Navbar implements OnInit {
   async syncUserInfo(): Promise<void> {
     const user = typeof this.authService.getUser === 'function' ? this.authService.getUser() : null;
     this.isLoggedIn = !!user?.uid;
-    this.nombreUsuario = (this.authService as any).nombreUsuario ?? null;
 
     if (!this.isLoggedIn) {
       this.esAdmin = false;
       this.nombreUsuario = null;
+      this.apellidoUsuario = null;
       return;
     }
 
@@ -66,7 +68,11 @@ export class Navbar implements OnInit {
       const ref = doc(this.firestore, 'usuarios', user!.uid);
       const snapshot = await getDoc(ref);
       const data = snapshot.data();
-      this.esAdmin = !!data?.['admin'];
+      this.nombreUsuario = data?.['nombre'] || null;
+      this.apellidoUsuario = data?.['apellido'] || null;
+      this.tipoUsuario = data?.['tipo'] || '';
+      this.esAdmin = this.tipoUsuario === 'admin';
+
     } catch {
       this.esAdmin = false;
     }
@@ -122,8 +128,7 @@ export class Navbar implements OnInit {
       '/home': 'Clínica Online',
       '/registrar': 'Registro',
       '/login': 'Ingreso',
-      '/juegos': 'Sala de juegos',
-      '/admin': 'Panel de administración',
+      '/usuarios': 'Panel de administración de usuarios',
       '/turnos': 'Mis turnos',
       '/perfil': 'Mi perfil'
     };
