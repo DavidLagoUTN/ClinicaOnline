@@ -33,13 +33,14 @@
   <ng-container *ngIf="tipoSeleccionado">
     <div class="form-bloque">
       <!-- Campos comunes -->
-      <input class = "campo" id="nombre" formControlName="nombre" placeholder="Nombre" />
-      <input class = "campo" id="apellido" formControlName="apellido" placeholder="Apellido" />
-      <input class = "campo" id="edad" formControlName="edad" type="number" placeholder="Edad" />
-      <input class = "campo" id="dni" formControlName="dni" placeholder="DNI" />
+      <input class="campo" id="nombre" formControlName="nombre" placeholder="Nombre" />
+      <input class="campo" id="apellido" formControlName="apellido" placeholder="Apellido" />
+      <input class="campo" id="edad" formControlName="edad" type="number" placeholder="Edad" />
+      <input class="campo" id="dni" formControlName="dni" placeholder="DNI" />
 
       <!-- Obra social (paciente) -->
-      <input class = "campo" *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
+      <input class="campo" *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial"
+        placeholder="Obra Social" />
 
       <!-- Especialidades (especialista) -->
       <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque-especialidades">
@@ -69,8 +70,8 @@
 
 
       <!-- Mail y contraseña -->
-      <input class = "campo" formControlName="mail" type="email" placeholder="Correo electrónico" />
-      <input class = "campo" formControlName="password" type="password" placeholder="Contraseña" />
+      <input class="campo" formControlName="mail" type="email" placeholder="Correo electrónico" />
+      <input class="campo" formControlName="password" type="password" placeholder="Contraseña" />
 
       <!-- Labels para imágenes -->
       <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin'">Imagen de perfil</label>
@@ -108,8 +109,13 @@
       <!-- fin images-container -->
 
     </div>
+    <div class="captcha-wrapper">
+      <ngx-recaptcha2 [siteKey]="'6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH'"
+        (captchaResponse)="resolverCaptcha($any($event))" (captchaExpired)="captchaExpirado()">
+      </ngx-recaptcha2>
+    </div>
 
-    <button type="submit" class="btn-primary">Registrar</button>
+    <button type="submit" class="btn-primary" [disabled]="isLoading || !form.valid || !captchaToken">Registrar</button>
   </ng-container>
 </form>
 <button type="button" class="btn-volverAUsuarios" *ngIf="modoAdmin" (click)="cancelar()">

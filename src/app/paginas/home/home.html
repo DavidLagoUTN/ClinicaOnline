@@ -17,7 +17,8 @@
       <div class="profile-preview" *ngIf="photoUrl">
         <img [src]="photoUrl" [alt]="displayName" class="profile-img" />
       </div>
-      <button routerLink="/turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
+      <button routerLink="/solicitar-turno" *ngIf="role === 'paciente'">Solicitar turno</button>
+      <button routerLink="/mis-turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
       <button routerLink="/perfil" *ngIf="role !== 'paciente'">Ir al perfil</button>
     </div>
   </ng-container>

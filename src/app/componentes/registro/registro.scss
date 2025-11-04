@@ -260,6 +260,14 @@ button {
   box-shadow: 0 0 0 3px rgba(16, 78, 167, 0.12);
 }
 
+.captcha-wrapper {
+  display: block;
+  margin: auto;
+  border-top: 2px solid #104fa7;
+  border-left: 2px solid #104fa7;
+  background: #104fa7;
+}
+
 /* responsive: reducir ancho en pantallas pequeñas */
 @media (max-width: 640px) {
   .tipo-card {
