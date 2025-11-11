@@ -44,30 +44,37 @@
 
       <!-- Especialidades (especialista) -->
       <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque-especialidades">
-        <label>Especialidades</label>
+        <!-- Selector plegable -->
+        <details class="especialidades-details">
+          <summary class="especialidades-summary">Seleccionar especialidades
+            <span class="count">({{(form.get('especialidadesSeleccionadas')?.value || []).length }})</span>
+          </summary>
 
-        <!-- Lista de especialidades con checkbox -->
-        <div *ngFor="let esp of especialidades">
-          <label>
-            <input type="checkbox" [value]="esp" (change)="toggleEspecialidad(esp, $event)"
-              [checked]="form.get('especialidadesSeleccionadas')?.value?.includes(esp)" />
-            {{ esp }}
-          </label>
-        </div>
+          <div class="especialidades-list">
+            <!-- Lista ordenada de especialidades desde Firestore -->
+            <div *ngFor="let esp of especialidades" class="especialidad-item">
 
-        <!-- Botón para agregar nueva -->
-        <button type="button" (click)="agregarCampoNuevaEspecialidad()" *ngIf="!form.get('nuevaEspecialidad')">
-          Agregar nueva especialidad
-        </button>
+              <input type="checkbox" [value]="esp" (change)="toggleEspecialidad(esp, $event)"
+                [checked]="form.get('especialidadesSeleccionadas')?.value?.includes(esp)" />
+              {{ esp }}
+            </div>
 
-        <!-- Input para escribir nueva -->
-        <div *ngIf="form.get('nuevaEspecialidad')">
-          <input formControlName="nuevaEspecialidad" placeholder="Nueva especialidad..." />
-          <button type="button" (click)="agregarNuevaEspecialidad()">Confirmar</button>
-        </div>
+            <!-- Agregar nueva especialidad (mantiene tu UX) -->
+            <div class="nueva-especialidad">
+              <button type="button" (click)="agregarCampoNuevaEspecialidad()"
+                *ngIf="!form.get('nuevaEspecialidad')">Agregar nueva especialidad</button>
+
+              <div *ngIf="form.get('nuevaEspecialidad')" class="nueva-especialidad-input">
+                <input formControlName="nuevaEspecialidad" placeholder="Nueva especialidad..." />
+                <div style="display:flex;gap:8px">
+                  <button type="button" (click)="agregarNuevaEspecialidad()">Confirmar</button>
+                  <button type="button" (click)="form.removeControl('nuevaEspecialidad')">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
-
-
 
       <!-- Mail y contraseña -->
       <input class="campo" formControlName="mail" type="email" placeholder="Correo electrónico" />
@@ -109,13 +116,8 @@
       <!-- fin images-container -->
 
     </div>
-    <div class="captcha-wrapper">
-      <ngx-recaptcha2 [siteKey]="'6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH'"
-        (captchaResponse)="resolverCaptcha($any($event))" (captchaExpired)="captchaExpirado()">
-      </ngx-recaptcha2>
-    </div>
-
-    <button type="submit" class="btn-primary" [disabled]="isLoading || !form.valid || !captchaToken">Registrar</button>
+    <div id="captcha" class="captcha-wrapper" data-sitekey="6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH"></div>
+    <button type="submit" class="btn-primary" [disabled]="isLoading">Registrar</button>
   </ng-container>
 </form>
 <button type="button" class="btn-volverAUsuarios" *ngIf="modoAdmin" (click)="cancelar()">

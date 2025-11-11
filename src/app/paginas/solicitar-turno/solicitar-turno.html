@@ -1,0 +1,100 @@
+<app-navbar></app-navbar>
+
+<h1 class="titulo">Solicitar turno</h1>
+<div class="app-container">
+
+  <!-- ADMIN: lista de pacientes como tarjetas (igual look que especialistas/especialidades) -->
+  <h2 class="titulo2"  *ngIf="isAdmin">Seleccioná el paciente para asignarle un turno</h2>
+  
+  <section class="select-paciente" *ngIf="isAdmin">
+    <div *ngIf="pacientesLista?.length; else sinPacientes" class="especialistas-grid">
+      <div *ngFor="let p of pacientesLista" class="especialista-tarjeta btn-paciente"
+        [class.selected]="pacienteSeleccionadoId === p.id" [attr.aria-pressed]="pacienteSeleccionadoId === p.id"
+        (click)="seleccionarPaciente(p)">
+        <div class="nombre">{{ p.nombre }} {{ p.apellido }}</div>
+        <button class="btn-circular" type="button" aria-hidden="true">
+          <img [src]="p.imagenPerfil || defaultAvatar" alt="{{ p.nombre }}" />
+        </button>
+      </div>
+    </div>
+    <ng-template #sinPacientes>
+      <div class="muted">No hay pacientes cargados</div>
+    </ng-template>
+  </section>
+
+  <h2 class="titulo2" *ngIf="!isAdmin || pacienteSeleccionadoId || adminVioEspecialistas">Seleccioná el especialista para sacar un turno:</h2>
+  <!-- Lista de especialistas -->
+  <section class="select-especialista" *ngIf="!isAdmin || pacienteSeleccionadoId || adminVioEspecialistas">
+    <div *ngIf="cargandoEspecialistas" class="overlay"><app-loading></app-loading></div>
+    <div *ngIf="!cargandoEspecialistas && especialistas?.length" class="especialistas-grid">
+      <div *ngFor="let e of especialistas" class="especialista-tarjeta" [class.selected]="seleccionado?.id === e.id"
+        [attr.aria-pressed]="seleccionado?.id === e.id" (click)="seleccionarEspecialista(e)">
+        <div class="nombre">{{ e.nombre }} {{ e.apellido }}</div>
+        <button class="btn-circular" type="button" aria-hidden="true">
+          <img [src]="e.imagenPerfil || defaultAvatar" alt="{{ e.nombre }}" />
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="!cargandoEspecialistas && !especialistas?.length" class="muted">No hay especialistas disponibles</div>
+  </section>
+
+  <!-- Especialidades del especialista seleccionado -->
+  <section class="select-especialidad" *ngIf="seleccionado">
+    <h3 class="subtitulo">¿Cuál especialidad de {{ seleccionado?.nombre }} buscás?</h3>
+
+    <div *ngIf="seleccionadasEspecialidadesDisponibles?.length; else sinEspecialidades" class="especialidades-grid">
+      <div *ngFor="let s of seleccionadasEspecialidadesDisponibles" class="especialidad-tarjeta"
+        (click)="seleccionarEspecialidad(s)" [class.selected]="especialidadSeleccionada === s">
+        <img class="img-especialidad" [src]="obtenerImagenEspecialidad(s)" alt="{{ s }}" />
+        <span class="texto-especialidad">{{ s }}</span>
+    </div>
+    </div>
+
+    <ng-template #sinEspecialidades>
+      <div class="muted">Este especialista no tiene especialidades públicas</div>
+    </ng-template>
+  </section>
+
+  <section class="select-dia" *ngIf="especialidadSeleccionada">
+    <h3 class="subtitulo">Seleccioná el día (próximos 15 días):</h3>
+
+    <div *ngIf="diasDisponibles?.length; else sinDias" class="dias-grid">
+      <button *ngFor="let d of diasDisponibles" class="btn-dia" (click)="seleccionarDia(d)"
+        [class.selected]="diaSeleccionado?.date === d.date" [attr.aria-pressed]="diaSeleccionado?.date === d.date">
+        {{ d.date }}
+      </button>
+    </div>
+
+    <ng-template #sinDias>
+      <div class="muted">No hay días disponibles en los próximos 15 días para esta especialidad</div>
+    </ng-template>
+  </section>
+
+  <!-- Horarios disponibles para el día seleccionado -->
+  <section class="select-horario" *ngIf="diaSeleccionado">
+    <h3 class="subtitulo">Seleccioná el horario:</h3>
+
+    <div *ngIf="horariosDisponiblesDia?.length; else sinHorarios" class="horarios-grid-tiles">
+      <button type="button" *ngFor="let h of horariosDisponiblesDia" class="btn-horario" (click)="seleccionarHora(h)"
+        [class.selected]="horaSeleccionada === h" [attr.aria-pressed]="horaSeleccionada === h" [disabled]="reservando">
+        {{ h }}
+      </button>
+    </div>
+
+    <ng-template #sinHorarios>
+      <div class="muted">No hay horarios disponibles para este día</div>
+    </ng-template>
+
+    <div class="nota" *ngIf="!reservando && !horaSeleccionada">Elegí un horario para solicitar el turno.</div>
+
+    <!-- botón confirmar: visible solo cuando hay horaSeleccionada -->
+    <div class="confirm-container" *ngIf="horaSeleccionada">
+      <button type="button" class="btn-confirm" (click)="confirmarTurno(horaSeleccionada!)" [disabled]="reservando">
+        Confirmar turno a las {{ horaSeleccionada }} hs
+      </button>
+    </div>
+
+    <div class="muted" *ngIf="reservando">Reservando turno...</div>
+  </section>
+</div>

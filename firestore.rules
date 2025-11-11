@@ -1,9 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Regla específica para la colección de especialidades
+    match /especialidades/{docId} {
+      // lectura pública
+      allow get, list: if true;
+
+      // permitir crear desde cliente, con validación básica del payload
+      allow create: if
+        request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 2
+        && request.resource.data.nombre.size() <= 80
+        && request.resource.data.createdAt is timestamp;
+
+      // no permitir updates ni deletes desde cliente
+      allow update, delete: if false;
+    }
+
+    // resto de colecciones: mantener tus reglas actuales (ejemplo: autenticadas)
     match /{document=**} {
-      allow list: if request.auth != null;
-      allow get: if request.auth != null;
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update: if request.auth != null;
       allow delete: if false;

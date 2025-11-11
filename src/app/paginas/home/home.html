@@ -1,32 +1,32 @@
 <app-navbar></app-navbar>
-
-<!-- Título principal (igual que antes) -->
-<h1 class="titulo">Bienvenido a la Clínica Online</h1>
-
-<!-- Contenedor principal (se mantiene la clase original) -->
+<h1 class="titulo"*ngIf="isLoggedIn">¡Te damos la bienvenida!</h1>
+<h1 class="titulo"*ngIf="!isLoggedIn">¡Te damos la bienvenida a nuestra Clínica!</h1>
 <div class="app-container">
-  <!-- Mensaje y acciones para usuario logueado -->
-  <ng-container *ngIf="isLoggedIn; else guestView">
-    <h2 *ngIf="role === 'paciente'">Hola, {{ displayName }} ¿En qué podemos ayudarte hoy?</h2>
-    <h2 *ngIf="role === 'especialista'">Hola, {{ displayName }} ¡Nos complace que trabajes para nosotros!</h2>
-    <h2 *ngIf="role === 'admin'">Hola, {{ displayName }}. Están a tu disposición las tareas administrativas que desees
-      realizar</h2>
-
-    <!-- Si querés botones para navegar según rol (heredan estilos existentes) -->
+  <div class="tarjeta-bienvenida" *ngIf="isLoggedIn">
+    <!-- Mensaje y acciones para usuario logueado -->
     <div class="acciones-logued">
+      <h2>Hola, {{ displayName }}</h2>
       <div class="profile-preview" *ngIf="photoUrl">
         <img [src]="photoUrl" [alt]="displayName" class="profile-img" />
       </div>
-      <button routerLink="/solicitar-turno" *ngIf="role === 'paciente'">Solicitar turno</button>
-      <button routerLink="/mis-turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
-      <button routerLink="/perfil" *ngIf="role !== 'paciente'">Ir al perfil</button>
+      <h2 *ngIf="role === 'paciente'">¿En qué podemos ayudarte hoy?</h2>
+      <h2 *ngIf="role === 'especialista'">¡Nos complace que trabajes para nosotros!</h2>
+      <h2 *ngIf="role === 'admin'">Están a tu disposición las tareas administrativas que desees realizar</h2>
     </div>
-  </ng-container>
+    <div>
+      <button routerLink="/mis-turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
+      <button routerLink="/solicitar-turno" *ngIf="role === 'paciente' || role === 'admin'">Solicitar turno</button>
+    </div>
+  </div>
 
-  <!-- Vista para invitados: mantiene exactamente el texto y botones que tenías -->
-  <ng-template #guestView>
-    <h2>Accedé a tu cuenta o registrate para comenzar</h2>
-    <button routerLink="/login">Ingresar</button>
-    <button routerLink="/registrar">Registrarse</button>
-  </ng-template>
+  <div class="tarjeta-bienvenida-invitado" *ngIf="!isLoggedIn">
+    <div>
+      <img [src]="'/assets/bienvenida.png'" [alt]="'hola'" class="bienvenida-img" />
+    </div>
+    <h2 class="bienvenida-titulo">Accedé a tu cuenta o registrate para comenzar</h2>
+    <div>
+      <button routerLink="/login">Ingresar</button>
+      <button routerLink="/registrar">Registrarse</button>
+    </div>
+  </div>
 </div>

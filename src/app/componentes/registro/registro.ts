@@ -1,15 +1,15 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, Input, AfterViewInit, Output, EventEmitter } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Auth, createUserWithEmailAndPassword, sendEmailVerification } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { LoadingComponent } from "../loading/loading";
 import { supabase } from '../../servicios/supabase';
-import { Output, EventEmitter } from '@angular/core';
 import { NgxCaptchaModule } from 'ngx-captcha';
+import { EspecialidadDoc, EspecialidadesService } from '../../servicios/especialidades.service';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-registro',
@@ -18,7 +18,7 @@ import { NgxCaptchaModule } from 'ngx-captcha';
   templateUrl: './registro.html',
   styleUrl: './registro.scss'
 })
-export class Registro implements OnInit {
+export class Registro implements OnInit, AfterViewInit {
   @Input() modoAdmin: boolean = false;
   @Output() cerrar = new EventEmitter<void>();
 
@@ -29,7 +29,7 @@ export class Registro implements OnInit {
 
   form!: FormGroup;
   tipoSeleccionado: '' | 'paciente' | 'especialista' | 'admin' = '';
-  especialidades: string[] = ['Cardiología', 'Dermatología', 'Pediatría', 'Otorrinolaringología'];
+  especialidades: string[] = [];
   nuevasEspecialidades: string[] = [];
 
   imagenPreview: string | null = null;
@@ -44,11 +44,26 @@ export class Registro implements OnInit {
     private auth: Auth,
     private firestore: Firestore,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private especialidadesSvc: EspecialidadesService
   ) { }
 
   ngOnInit(): void {
     this.crearFormulario();
+
+    this.especialidadesSvc.listAll().pipe(
+      map((list: EspecialidadDoc[]) =>
+        list
+          .map(i => i.nombre)
+          .filter(Boolean)
+          .map(s => s.trim())
+          .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+      )
+    ).subscribe((nombres: string[]) => {
+      this.especialidades = nombres;
+    }, err => {
+      console.error('Error cargando especialidades', err);
+    });
   }
 
   actualizarTipo(event: Event): void {
@@ -103,18 +118,48 @@ export class Registro implements OnInit {
     }
   }
 
-  agregarNuevaEspecialidad(): void {
-    const nueva = this.form.get('nuevaEspecialidad')?.value?.trim();
-    if (nueva && !this.especialidades.includes(nueva)) {
-      this.especialidades.push(nueva);
+  async agregarNuevaEspecialidad(): Promise<void> {
+    const nueva = (this.form.get('nuevaEspecialidad')?.value || '').trim();
+    if (!nueva) {
+      return;
     }
-    if (nueva) {
-      const actuales = this.form.get('especialidadesSeleccionadas')?.value || [];
-      if (!actuales.includes(nueva)) {
-        this.form.get('especialidadesSeleccionadas')?.setValue([...actuales, nueva]);
+
+    // normalizar (opcional): capitalizar primera letra, trim, etc.
+    const nombreNormalizado = nueva;
+
+    try {
+      // chequear existencia en Firestore (evita condiciones de carrera mínimas)
+      const existe = await this.especialidadesSvc.existsByName(nombreNormalizado);
+      if (!existe) {
+        await this.especialidadesSvc.add(nombreNormalizado, this.auth.currentUser?.uid);
       }
+
+      // actualizar lista local (collectionData se encargará de sincronizar, pero actualizamos de forma optimista)
+      if (!this.especialidades.includes(nombreNormalizado)) {
+        this.especialidades.push(nombreNormalizado);
+      }
+
+      if (!this.especialidades.includes(nombreNormalizado)) {
+        this.especialidades.push(nombreNormalizado);
+        // reordenar localmente
+        this.especialidades.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+      }
+
+
+      // añadir al control de seleccionadas si corresponde
+      const actuales = this.form.get('especialidadesSeleccionadas')?.value || [];
+      if (!actuales.includes(nombreNormalizado)) {
+        this.form.get('especialidadesSeleccionadas')?.setValue([...actuales, nombreNormalizado]);
+      }
+
+      // limpiar input nuevo
+      if (this.form.get('nuevaEspecialidad')) this.form.removeControl('nuevaEspecialidad');
+
+      this.snackBar.open('Especialidad agregada', undefined, { duration: 2000 });
+    } catch (err: any) {
+      console.error('Error agregando especialidad', err);
+      this.snackBar.open('No se pudo agregar la especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
     }
-    this.form.removeControl('nuevaEspecialidad');
   }
 
   toggleEspecialidad(esp: string, event: Event): void {
@@ -257,172 +302,178 @@ export class Registro implements OnInit {
   }
 
 
-  resolverCaptcha(token: any) {
-    this.captchaToken = token;
-    if (token) {
-      if (!this.form.get('captcha')) {
-        this.form.addControl('captcha', this.fb.control(token, Validators.required));
-      } else {
-        this.form.get('captcha')?.setValue(token);
+  ngAfterViewInit(): void {
+    const checkInterval = setInterval(() => {
+      const captchaDiv = document.getElementById('captcha');
+      if (captchaDiv && (window as any).grecaptcha && (window as any).grecaptcha.render) {
+        try {
+          (window as any).grecaptcha.render('captcha', {
+            'sitekey': '6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH'
+          });
+        } catch (e) {
+        }
+        clearInterval(checkInterval);
       }
-    }
+    }, 500);
   }
-
-  captchaExpirado() {
-    this.captchaToken = null;
-    if (this.form.get('captcha')) this.form.get('captcha')?.setValue(null);
-  }
-
 
 
 
   async onSubmit(): Promise<void> {
-  // forzar validación visual
-  this.form.markAllAsTouched();
+    // forzar validación visual
+    this.form.markAllAsTouched();
 
-  // validaciones antes de activar loader
-  const valores = this.form.getRawValue();
-  const campos = Object.keys(valores);
-  const todosVacios = campos.every(key => {
-    const valor = valores[key];
-    return valor === '' || valor === null || valor === undefined;
-  });
+    // validaciones antes de activar loader
+    const valores = this.form.getRawValue();
+    const campos = Object.keys(valores);
+    const todosVacios = campos.every(key => {
+      const valor = valores[key];
+      return valor === '' || valor === null || valor === undefined;
+    });
 
-  if (todosVacios) {
-    this.snackBar.open('Complete todos los campos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  const c = this.form.controls;
-  const edadMinima = this.tipoSeleccionado === 'paciente' ? 0 : 18;
-
-  if ((c['nombre'] && c['nombre'].hasError('required')) || (c['apellido'] && c['apellido'].hasError('required'))) {
-    this.snackBar.open('Nombre y Apellido son obligatorios y deben ser alfabéticos.', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if ((c['nombre'] && c['nombre'].hasError('pattern')) || (c['apellido'] && c['apellido'].hasError('pattern'))) {
-    this.snackBar.open('Solo se permiten letras en nombre y apellido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['edad'] && c['edad'].hasError('required')) {
-    this.snackBar.open('La edad es obligatoria y debe ser numérica', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['edad'] && (c['edad'].hasError('min') || c['edad'].hasError('max'))) {
-    this.snackBar.open(`La edad debe estar entre ${edadMinima} y 120 años`, undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['dni'] && c['dni'].hasError('required')) {
-    this.snackBar.open('El DNI es obligatorio y debe ser numérico', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['dni'] && c['dni'].hasError('pattern')) {
-    this.snackBar.open('El DNI debe tener al menos 8 dígitos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (this.tipoSeleccionado === 'paciente' && c['obraSocial'] && c['obraSocial'].hasError('required')) {
-    this.snackBar.open('La obra social es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (this.tipoSeleccionado === 'especialista' && c['especialidadesSeleccionadas'] && c['especialidadesSeleccionadas'].hasError('required')) {
-    this.snackBar.open('Debés seleccionar al menos una especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['mail'] && c['mail'].hasError('required')) {
-    this.snackBar.open('El correo es obligatorio', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['mail'] && c['mail'].hasError('email')) {
-    this.snackBar.open('Ingrese un correo válido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['password'] && c['password'].hasError('required')) {
-    this.snackBar.open('La contraseña es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['password'] && c['password'].hasError('minlength')) {
-    this.snackBar.open('La contraseña debe tener al menos 6 caracteres', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (c['imagenPerfil'] && c['imagenPerfil'].hasError('required')) {
-    this.snackBar.open('La imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
-
-  if (this.tipoSeleccionado === 'paciente') {
-    const perfilBase = this.form.get('imagenPerfil')?.value;
-    const extraBase = this.form.get('imagenPerfilExtra')?.value;
-    if (!perfilBase || !extraBase) {
-      this.snackBar.open('La segunda imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+    if (todosVacios) {
+      this.snackBar.open('Complete todos los campos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
       return;
     }
-  }
 
-  if (!this.captchaToken) {
-    this.snackBar.open('Por favor, completá el captcha', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
-  }
+    const c = this.form.controls;
+    const edadMinima = this.tipoSeleccionado === 'paciente' ? 0 : 18;
 
-  // validado todo -> activar loader y ejecutar async
-  this.isLoading = true;
-  try {
-    const { mail, password } = this.form.value;
-    const cred = await createUserWithEmailAndPassword(this.auth, mail, password);
-    this.auth.languageCode = 'es';
-    await sendEmailVerification(cred.user);
+    if ((c['nombre'] && c['nombre'].hasError('required')) || (c['apellido'] && c['apellido'].hasError('required'))) {
+      this.snackBar.open('Nombre y Apellido son obligatorios y deben ser alfabéticos.', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
 
-    const uid = cred.user.uid;
+    if ((c['nombre'] && c['nombre'].hasError('pattern')) || (c['apellido'] && c['apellido'].hasError('pattern'))) {
+      this.snackBar.open('Solo se permiten letras en nombre y apellido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
 
-    const perfilFile: File = this.form.get('imagenPerfil')?.value;
-    const extraFile: File = this.form.get('imagenPerfilExtra')?.value;
+    if (c['edad'] && c['edad'].hasError('required')) {
+      this.snackBar.open('La edad es obligatoria y debe ser numérica', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
 
-    const imagenPerfilUrl = perfilFile ? await this.subirAStorage(perfilFile, uid, 'perfil') : null;
-    const imagenExtraUrl = extraFile ? await this.subirAStorage(extraFile, uid, 'extra') : null;
+    if (c['edad'] && (c['edad'].hasError('min') || c['edad'].hasError('max'))) {
+      this.snackBar.open(`La edad debe estar entre ${edadMinima} y 120 años`, undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
 
-    const perfil: any = {
-      ...this.form.value,
-      imagenPerfil: imagenPerfilUrl,
-      tipo: this.tipoSeleccionado,
-      uid
-    };
+    if (c['dni'] && c['dni'].hasError('required')) {
+      this.snackBar.open('El DNI es obligatorio y debe ser numérico', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['dni'] && c['dni'].hasError('pattern')) {
+      this.snackBar.open('El DNI debe tener al menos 8 dígitos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (this.tipoSeleccionado === 'paciente' && c['obraSocial'] && c['obraSocial'].hasError('required')) {
+      this.snackBar.open('La obra social es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (this.tipoSeleccionado === 'especialista' && c['especialidadesSeleccionadas'] && c['especialidadesSeleccionadas'].hasError('required')) {
+      this.snackBar.open('Debés seleccionar al menos una especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['mail'] && c['mail'].hasError('required')) {
+      this.snackBar.open('El correo es obligatorio', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['mail'] && c['mail'].hasError('email')) {
+      this.snackBar.open('Ingrese un correo válido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['password'] && c['password'].hasError('required')) {
+      this.snackBar.open('La contraseña es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['password'] && c['password'].hasError('minlength')) {
+      this.snackBar.open('La contraseña debe tener al menos 6 caracteres', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+
+    if (c['imagenPerfil'] && c['imagenPerfil'].hasError('required')) {
+      this.snackBar.open('La imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
 
     if (this.tipoSeleccionado === 'paciente') {
-      perfil.imagenPerfilExtra = imagenExtraUrl;
-      perfil.obraSocial = this.form.get('obraSocial')?.value;
+      const perfilBase = this.form.get('imagenPerfil')?.value;
+      const extraBase = this.form.get('imagenPerfilExtra')?.value;
+      if (!perfilBase || !extraBase) {
+        this.snackBar.open('La segunda imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+        return;
+      }
     }
 
-    if (this.tipoSeleccionado === 'especialista') {
-      perfil.especialidades = this.form.get('especialidadesSeleccionadas')?.value;
-      perfil.aprobadoPorAdmin = this.modoAdmin ? true : false;
+    const tokenFromWidget = (window as any).grecaptcha ? (window as any).grecaptcha.getResponse() : null;
+    if (!tokenFromWidget) {
+      this.snackBar.open('Por favor, completá el captcha', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
+    }
+    this.captchaToken = tokenFromWidget;
+    if (!this.form.get('captcha')) {
+      this.form.addControl('captcha', this.fb.control(tokenFromWidget, Validators.required));
+    } else {
+      this.form.get('captcha')?.setValue(tokenFromWidget);
     }
 
-    delete perfil.password;
-    delete perfil.especialidadesSeleccionadas;
-    delete perfil.nuevaEspecialidad;
+    // validado todo -> activar loader y ejecutar async
+    this.isLoading = true;
+    try {
+      const { mail, password } = this.form.value;
+      const cred = await createUserWithEmailAndPassword(this.auth, mail, password);
+      this.auth.languageCode = 'es';
+      await sendEmailVerification(cred.user);
 
-    await setDoc(doc(this.firestore, 'usuarios', uid), perfil);
-    await this.auth.signOut();
+      const uid = cred.user.uid;
 
-    this.snackBar.open('Registro exitoso. Verificá tu correo antes de iniciar sesión.', undefined, { duration: 6000, panelClass: ['mat-success'] });
-    this.router.navigate(['/login']);
-  } catch (error: any) {
-    const msg = error.code === 'auth/email-already-in-use' ? 'El correo que ingresaste ya se encuentra registrado.' : error.message;
-    this.snackBar.open(msg, undefined, { duration: 5000, panelClass: ['mat-warn'] });
-  } finally {
-    this.isLoading = false;
+      const perfilFile: File = this.form.get('imagenPerfil')?.value;
+      const extraFile: File = this.form.get('imagenPerfilExtra')?.value;
+
+      const imagenPerfilUrl = perfilFile ? await this.subirAStorage(perfilFile, uid, 'perfil') : null;
+      const imagenExtraUrl = extraFile ? await this.subirAStorage(extraFile, uid, 'extra') : null;
+
+      const perfil: any = {
+        ...this.form.value,
+        imagenPerfil: imagenPerfilUrl,
+        tipo: this.tipoSeleccionado,
+        uid
+      };
+
+      if (this.tipoSeleccionado === 'paciente') {
+        perfil.imagenPerfilExtra = imagenExtraUrl;
+        perfil.obraSocial = this.form.get('obraSocial')?.value;
+      }
+
+      if (this.tipoSeleccionado === 'especialista') {
+        perfil.especialidades = this.form.get('especialidadesSeleccionadas')?.value;
+        perfil.aprobadoPorAdmin = this.modoAdmin ? true : false;
+        perfil.duracionTurno = 30;
+      }
+
+      delete perfil.password;
+      delete perfil.especialidadesSeleccionadas;
+      delete perfil.nuevaEspecialidad;
+
+      await setDoc(doc(this.firestore, 'usuarios', uid), perfil);
+      await this.auth.signOut();
+
+      this.snackBar.open('Registro exitoso. Verificá tu correo antes de iniciar sesión.', undefined, { duration: 6000, panelClass: ['mat-success'] });
+      this.router.navigate(['/login']);
+    } catch (error: any) {
+      const msg = error.code === 'auth/email-already-in-use' ? 'El correo que ingresaste ya se encuentra registrado.' : error.message;
+      this.snackBar.open(msg, undefined, { duration: 5000, panelClass: ['mat-warn'] });
+    } finally {
+      this.isLoading = false;
+    }
   }
-}
 
 }

@@ -22,8 +22,9 @@
   <!-- DERECHA: Sesión activa o enlaces de invitado -->
   <div class="navbar-right">
     <ng-container *ngIf="isLoggedIn; else guestLinks">
-        <span class="nombre">{{ nombreUsuario }} {{apellidoUsuario}}</span>
-        <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+      <button style="padding: 0.5rem 0.5rem;" routerLink="/mi-perfil">Mi perfil</button>
+      <span class="nombre">{{ nombreUsuario }} {{apellidoUsuario}}</span>
+      <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
     </ng-container>
 
     <ng-template #guestLinks>

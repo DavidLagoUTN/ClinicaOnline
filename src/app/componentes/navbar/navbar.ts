@@ -125,15 +125,15 @@ export class Navbar implements OnInit {
 
   private actualizarTitulo(url: string): void {
     const mapa: Record<string, string> = {
-      '/home': 'Clínica Online',
+      '/home': 'Clínica Online DLL',
       '/registrar': 'Registro',
       '/login': 'Ingreso',
       '/usuarios': 'Panel de administración de usuarios',
       '/turnos': 'Mis turnos',
-      '/perfil': 'Mi perfil'
+      '/mi-perfil': 'Perfil personal'
     };
 
     const ruta = url.split('?')[0];
-    this.currentTitle = mapa[ruta] || 'Clínica Online';
+    this.currentTitle = mapa[ruta] || 'Clínica Online DLL';
   }
 }

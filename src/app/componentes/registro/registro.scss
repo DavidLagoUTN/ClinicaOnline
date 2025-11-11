@@ -58,14 +58,36 @@
   width: 53%;
 }
 
-label {
+.especialidades-summary {
   color: #fff;
   font-weight: bold;
   padding: 0.3rem;
   border: 1px solid rgb(1, 49, 117);
-  border-radius: 6px;
   background: rgb(0, 71, 143);
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  cursor: pointer;
+}
+
+label {
   width: fit-content;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: bold;
+  padding: 0.3rem;
+  border: 1px solid rgb(1, 49, 117);
+  background: rgb(0, 71, 143);
+}
+
+.especialidades-list {
+  padding: 0.5rem;
+  border: 1px solid rgb(11, 55, 118);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  background: hsla(215, 64%, 42%, 0.950);
+  line-height: 1;
+  color: white;
+  font-weight: bolder;
 }
 
 .campo {
@@ -89,7 +111,7 @@ label {
 
 button {
   display: block;
-  margin:auto;
+  margin: auto;
   margin-top: 0.5rem;
 }
 

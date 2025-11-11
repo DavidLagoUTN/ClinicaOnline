@@ -1,0 +1,380 @@
+/* layout simple: imagen - datos - imagen */
+.fila {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(240, 248, 255, 0.6);
+  border: 3px solid #104ea7;
+}
+
+/* columnas: imagenes y centro de datos */
+.col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* imágenes */
+.profile-img {
+  width: 160px;
+  height: 160px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+  border: 3px solid #104ea7;
+  background: linear-gradient(180deg, #eef7ff, #ffffff);
+}
+
+/* datos centro */
+.datos-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 6px;
+  border: 3px solid #104ea7;
+  background-color: hsla(197, 54%, 55%, 0.85);
+  padding: 0.5rem;
+}
+
+.datos-centro p {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.campo,
+.contenido {
+  display: inline-block;
+  text-align: center;
+  color: #06314f;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 0.2rem 0.4rem;
+}
+
+.campo {
+  width: var(--campo-min-px, 140px);
+  background-color: #329fca;
+  color: rgb(10, 52, 109);
+  border-radius: 6px;
+}
+
+/* Horarios compactos */
+.horarios-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.dia-bloque {
+  border: 2px solid #104ea7;
+  padding: 0.5rem;
+  min-width: 160px;
+  background-color: #f0f8ff;
+  border-radius: 6px;
+  color: #083049;
+}
+
+.lista-dias {
+  margin: auto;
+  padding: 0;
+  font-weight: 700;
+  font-size: medium;
+}
+
+.dia, .sin-horarios{
+  background-color: #329fca;
+  color: rgb(10, 52, 109);
+  border-radius: 4px;
+  font-weight: 700;
+  padding: 0.2rem;
+  width: fit-content;
+  margin-left: 0.2rem;
+  display: inline-block;
+  text-align: center;
+  width: 85px;
+}
+
+.sin-horarios{
+  width: fit-content;
+  padding: 0.5rem;
+  border: 3px solid #104ea7;
+}
+
+.horario{
+  background-color: hsla(197, 54%, 55%, 0.85);
+  padding: 0.5rem;
+  border-radius: 4px;
+  color: #06314f;
+  font-weight: 500;
+  border: 3px solid #104ea7;
+}
+
+.btn-reducido{
+  padding: 0.2rem;
+  font-size: 1rem;
+}
+
+.btn-admin {
+  display: block;
+  margin: 0.5rem auto;
+}
+
+.especialidad-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(240, 248, 255, 0.6);
+  border: 1px solid rgba(16, 78, 167, 0.08);
+  font-weight: 700;
+  color: #06314f;
+  width: 72%;
+}
+
+.especialidades-details .chevron::after, .duracion-details .chevron::after {
+  margin-top: 0.2rem;
+  margin-left: -0.5rem;
+  content: '[modificar]';
+  display: inline-block;
+  color: #104ea7;
+  border-bottom: 3px solid #104ea7;
+  font-weight: 500;
+}
+
+.especialidades-details .chevron::after {
+  content: '[modificar] ►';
+}
+
+.especialidades-details[open] .chevron::after {
+  content: '[modificar] ▼';
+}
+
+/* =========================
+   Modal y backdrop
+   ========================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 16, 40, 0.45);
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.modal {
+  background: rgba(240, 248, 255, 0.6);
+  color: #06283d;
+  overflow: auto;
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(2, 20, 50, 0.45);
+  padding: 1rem 1.25rem;
+  z-index: 1210;
+  border: 3px solid #104ea7;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #104ea7;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  color: #104ea7;
+}
+
+/* Grid/cards de días */
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 días por fila */
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+/* Cada tarjeta ocupa todo el ancho de su columna */
+.modal-dia {
+  min-width: 0; /* evita que el min-width bloquee la rejilla */
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(16, 78, 167, 0.12);
+  padding: 0.6rem;
+  border-radius: 8px;
+  background-color: hsla(197, 54%, 55%, 0.85);
+}
+
+/* fila superior: título + controles inline */
+.modal-dia-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background-color: #329fca;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.modal-dia-titulo {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: rgb(10, 52, 109);
+  margin-bottom: 0;
+}
+
+/* controles compactos */
+.modal-controls,
+.modal-controls-inline {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal-controls-inline {
+  flex-wrap: nowrap;
+}
+
+.modal-controls select,
+.modal-controls-inline select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.28rem 0.45rem;
+  font-size: 0.92rem;
+  min-width: 72px;
+  border-radius: 6px;
+  background: rgba(240, 248, 255, 0.6);
+  border: 1px solid  #329fca;
+  color: #083049;
+  cursor: pointer;
+}
+
+.modal-controls button,
+.btn-add {
+  padding: 0.32rem 0.55rem;
+  border-radius: 6px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(16, 78, 167, 0.12);
+}
+
+/* Lista de rangos */
+.modal-rangos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.modal-rangos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  background: rgba(240, 248, 255, 0.6);
+  border: 1px solid  #329fca;
+  color: #083049;
+}
+
+.modal-rangos button {
+  background:  #b43a3a;
+  border: 1px solid #6c2323;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Footer acciones */
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-save, .btn-cancel {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .modal-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 0.75rem;
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-controls {
+    gap: 0.3rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .modal-dia-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .modal-controls-inline select {
+    min-width: 100px;
+  }
+
+  .modal-dia {
+    min-width: auto;
+  }
+}
+
+/* spacing final para móviles */
+@media (max-width: 700px) {
+  .fila {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .datos-centro {
+    align-items: center;
+    text-align: center;
+  }
+
+  .datos-centro p {
+    white-space: normal;
+  }
+}

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UsersService } from '../../servicios/users.service';
+import { UsersService } from '../../servicios/usuarios.service';
 import { Navbar } from '../../componentes/navbar/navbar';
 import { RouterModule } from '@angular/router';
 import { NgZone } from '@angular/core';

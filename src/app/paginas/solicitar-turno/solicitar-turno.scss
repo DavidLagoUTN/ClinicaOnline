@@ -1,0 +1,311 @@
+/* contenedores principales */
+.select-paciente,
+.select-especialista,
+.select-especialidad,
+.select-dia,
+.select-horario {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 6px;
+  border: 3px solid #104ea7;
+  background-color: hsla(197, 54%, 55%, 0.85);
+  padding: 0.5rem;
+}
+
+/* grids */
+.especialistas-grid,
+.especialidades-grid,
+.dias-grid,
+.horarios-grid-tiles {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* tarjeta especialista */
+.especialista-tarjeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 110px;
+  background: rgba(240,248,255,0.8);
+  border: 2px solid rgba(16,78,167,0.12);
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 0.6rem;
+}
+
+.especialista-tarjeta .nombre {
+  font-weight: 800;
+  color: #06314f;
+  margin-bottom: 6px;
+  text-align: center;
+  /* permitir wrap natural para que el nombre entre en varias líneas */
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* botones circulares (avatar) */
+.btn-circular {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-circular img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* base compartida para los cuatro tipos interactivos */
+.interactive-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-direction: row;
+  padding: 6px 10px;
+  min-width: 72px;
+  border-radius: 8px;
+  background: rgba(240,248,255,0.8);
+  border: 2px solid rgba(16,78,167,0.12);
+  color: #06314f;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* variantes con tamaños concretos */
+.especialidad-tarjeta {
+  @extend .interactive-card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 170px;
+  border-radius: 10px;
+  gap: 8px;
+}
+
+.especialidad-tarjeta .img-especialidad {
+  width: 98px;
+  height: 98px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 3px solid #104ea7;
+}
+
+.img-especialidad {
+  cursor: pointer;
+}
+
+.especialidad-tarjeta .texto-especialidad {
+  font-weight: 800;
+  font-size: large;
+  color: #06314f;
+}
+
+.btn-dia {
+  @extend .interactive-card;
+  padding: 8px 10px;
+  font-weight: 700;
+  border-radius: 0px;
+}
+
+.btn-horario {
+  @extend .interactive-card;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  font-weight: 800;
+}
+
+/* textos y utilidades */
+.muted {
+  color: #083049;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+.subtitulo {
+  margin: .5rem 0;
+  color: #104ea7;
+  font-weight: 800;
+}
+
+.nota {
+  margin-top: .6rem;
+  color: #06314f;
+  font-weight: 700;
+}
+
+/* estilo de selección reutilizable (misma apariencia que especialista seleccionado) */
+.selection-style {
+  box-shadow: 0 6px 16px rgba(16,78,167,0.15);
+  transform: translateY(-2px);
+  background: #104fa760;
+  border: 3px solid #104ea7;
+  color: #fff;
+}
+
+/* aplicar la selección a los elementos interactivos */
+.especialidad-tarjeta.selected,
+.btn-dia.selected,
+.btn-horario.selected,
+.especialista-tarjeta.selected {
+  @extend .selection-style;
+}
+
+/* confirmar: contenedor centrado y botón */
+.confirm-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+.btn-confirm {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #104ea7;
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* accesibilidad: foco visible */
+.especialidad-tarjeta:focus,
+.btn-dia:focus,
+.btn-horario:focus,
+.btn-circular:focus,
+.btn-confirm:focus,
+.especialista-tarjeta:focus {
+  outline: 3px solid rgba(16,78,167,0.18);
+  outline-offset: 2px;
+}
+
+/* responsive tweaks */
+@media (max-width: 600px) {
+  .especialistas-grid,
+  .especialidades-grid,
+  .dias-grid,
+  .horarios-grid-tiles {
+    gap: 0.5rem;
+  }
+
+  .especialista-tarjeta {
+    width: 96px;
+    /* ajustar min-height en mobile para mantener proporciones */
+    min-height: 150px;
+    padding: 0.45rem;
+  }
+
+  .especialidad-tarjeta {
+    min-width: 140px;
+    padding: 6px 8px;
+  }
+
+  .btn-horario {
+    width: 64px;
+    height: 40px;
+  }
+
+  .btn-circular {
+    width: 72px;
+    height: 72px;
+  }
+
+  .btn-circular img {
+    object-fit: cover;
+  }
+}
+
+/* =========================
+   AVATAR ANCLADO AL FONDO
+   Nombre arriba (1-2 líneas), avatar siempre en el fondo centrado
+   ========================= */
+
+.especialista-tarjeta,
+.btn-paciente {
+  position: relative; /* necesaria para el posicionamiento absoluto del avatar */
+  padding-bottom: 16px; /* espacio extra inferior para que el avatar no tape contenido */
+  box-sizing: border-box;
+}
+
+/* contenedor interno para el contenido textual (nombre u otros) */
+.especialista-tarjeta .card-content,
+.btn-paciente .card-content {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  /* permitimos que el nombre haga wrap sin empujar el avatar */
+  display: block;
+}
+
+/* mantener el nombre con posibilidad de 2 líneas naturales */
+.especialista-tarjeta .nombre,
+.btn-paciente .nombre {
+  margin: 0 8px 8px 8px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.05rem;
+  font-weight: 800;
+  color: #06314f;
+}
+
+/* wrapper absoluto del avatar, centrado y pegado al fondo de la card */
+.especialista-tarjeta .avatar-bottom,
+.btn-paciente .avatar-bottom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px; /* separación desde el borde inferior; ajustá si querés */
+  width: 86px;  /* respeta tu tamaño visual original */
+  height: 86px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+  pointer-events: none; /* evita conflictos si el avatar es decorativo */
+}
+
+/* imagen dentro del wrapper absoluto (cover y centrado) */
+.especialista-tarjeta .avatar-bottom img,
+.btn-paciente .avatar-bottom img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 50%;
+}
+
+/* si necesitás que el avatar siga siendo clickeable, pon pointer-events:auto en .avatar-bottom */
+
+/* Responsive: reducir avatar y ajuste en mobile */
+@media (max-width: 600px) {
+  .especialista-tarjeta .avatar-bottom,
+  .btn-paciente .avatar-bottom {
+    width: 56px;
+    height: 56px;
+    bottom: 10px;
+  }
+
+  .especialista-tarjeta,
+  .btn-paciente {
+    padding-bottom: 12px;
+  }
+}
