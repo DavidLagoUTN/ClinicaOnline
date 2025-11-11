@@ -1,59 +1,28 @@
-# ClinicaOnline
+# Clinica Online DLL
+Este proyecto fue desarrollado con Angular CLI, versión 20.3.1
+Se trata de un proyecto final para la materia: Laboratorio de Computación IV
+El mismo consta de un sistema de clínica online el cual permite manejar turnos asociados a pacientes y especialistas. Los administradores también pueden administrarlos.
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.1.
-
-## Development server
-
-To start a local development server, run:
-
+## Servidor de desarrollo
+Para arrancar el servidor de desarrollo local, utilizar el siguiente comando:
 ```bash
 ng serve
 ```
+Una vez que el server esté corriendo, abrí tu navegador y dirigite a `http://localhost:4200/`. La aplicación se recargará automáticamente cuando modifiques alguno de los archivos de recursos.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Algunas Imágenes del proyecto
 
-## Code scaffolding
+### Página de bienvenida
+![Página bienvenida](./src/assets/read-me/pantalla-bienvenida.png)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Página de home usuarios
+![Página home usuario](./src/assets/read-me/pantalla-home-usuario.png)
 
-```bash
-ng generate component component-name
-```
+### Página de login
+![Página home usuario](./src/assets/read-me/pantalla-login.png)
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Página de registro
+![Página home usuario](./src/assets/read-me/pantalla-registro.png)
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Página de solicitar turno
+![Página home usuario](./src/assets/read-me/pantalla-solicitar-turno.png)
