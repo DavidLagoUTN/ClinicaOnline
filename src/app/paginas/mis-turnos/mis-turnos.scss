@@ -1,0 +1,458 @@
+:host {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+/* Contenedor principal */
+.app-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+/* Tarjeta principal */
+.tarjeta-mis-turnos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border: 3px solid #104ea7;
+  border-radius: 8px;
+  background-color: hsla(197, 54%, 55%, 0.85);
+  box-sizing: border-box;
+}
+
+/* Header / filtros */
+.header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filtros {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-buscador {
+  width: 275px;
+}
+
+/* Resumen */
+.resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resumen h2 {
+  margin: 0;
+  color: #092b5e;
+}
+
+/* Lista y cards */
+.turnos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.turno-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  min-height: 140px;
+  border-radius: 10px;
+  background: rgba(240, 248, 255, 0.92);
+  border: 2px solid rgba(16, 78, 167, 0.15);
+  box-sizing: border-box;
+  width: 600px;
+}
+
+/* Avatar */
+.avatar-mini {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 2px solid #104ea7;
+}
+
+.avatar-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Body */
+.turno-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fila-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 4px;
+}
+
+.persona {
+  font-weight: 900;
+  color: #06314f;
+}
+
+/* Meta / datos */
+.fila-2 {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.datos-turno {
+  width: 100%;
+}
+
+.dato {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+
+/* Labels / valores */
+.label {
+  font-weight: 500;
+  color: #666;
+  min-width: 100px;
+}
+
+.valor {
+  font-weight: bold;
+  color: #222;
+  flex: 1;
+}
+
+/* Nota */
+.nota {
+  color: #083049;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
+/* Estados compactos */
+.estado-compact {
+  font-weight: 800;
+  color: #104ea7;
+  text-transform: lowercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(16, 78, 167, 0.06);
+  border: 1px solid rgba(16, 78, 167, 0.08);
+  min-width: 140px;
+  text-align: center;
+}
+
+.estado-compact.pendiente {
+  color: #f39c12;
+  border-color: rgba(243, 156, 18, 0.12);
+  background: rgba(243, 156, 18, 0.04);
+}
+
+.estado-compact.aceptado {
+  color: #27ae60;
+  border-color: rgba(39, 174, 96, 0.12);
+  background: rgba(39, 174, 96, 0.04);
+}
+
+.estado-compact.cancelado {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.12);
+  background: rgba(192, 57, 43, 0.04);
+}
+
+.estado-compact.atendido {
+  color: #2d6a73;
+  border-color: rgba(45, 106, 115, 0.12);
+  background: rgba(45, 106, 115, 0.04);
+}
+
+.estado-compact.rechazado {
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.12);
+  background: rgba(231, 76, 60, 0.04);
+}
+
+/* Right actions (consolidado) */
+.turno-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.turno-right>div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+/* Botones: coherentes y reutilizados */
+button {
+  background-color: #104ea7;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #06314f;
+  border: 2px solid rgba(16, 78, 167, 0.12);
+  padding: 0.45rem 0.8rem;
+}
+
+.btn-danger {
+  background: #c0392b;
+  border: none;
+  padding: 0.45rem 0.8rem;
+  color: #fff;
+}
+
+/* Forzar ancho de botones en desktop, y comportamiento responsive */
+.turno-right button,
+.turno-right .btn-ghost,
+.turno-right .btn-danger {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.turno-right button {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+/* Empty state */
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: #06314f;
+  font-weight: 700;
+}
+
+/* Inline forms (cancel / reject / final / survey / rating) - consolidado */
+.cancel-form,
+.reject-form,
+.final-form,
+.survey-form,
+.rating-form {
+  width: 100%;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cancel-label,
+.reject-label {
+  font-weight: 700;
+  color: #06314f;
+}
+
+.cancel-textarea,
+.reject-textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 78, 167, 0.12);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  min-height: 64px;
+  box-sizing: border-box;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 78, 167, 0.12);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.cancel-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Mostrar comentario guardado */
+.cancel-comment {
+  margin-top: 6px;
+  padding: 8px;
+  background: rgba(16, 78, 167, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(16, 78, 167, 0.06);
+}
+
+.cancel-text {
+  color: #083049;
+}
+
+/* Toggle / panel reseña (consolidado) */
+.resena-toggle {
+  margin-top: 6px;
+}
+
+.resena-toggle .btn-ghost {
+  padding: 0.4rem 0.7rem;
+  font-weight: 700;
+}
+
+.resena-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease, padding 180ms ease;
+  padding: 0;
+  margin-top: 0;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.resena-panel.open {
+  padding: 8px;
+  max-height: 600px;
+  margin-top: 8px;
+  background: rgba(16, 78, 167, 0.03);
+  border: 1px solid rgba(16, 78, 167, 0.06);
+}
+
+.resena-panel .cancel-label {
+  font-weight: 700;
+  color: #06314f;
+}
+
+.resena-panel .cancel-text {
+  color: #083049;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Toggle / panel calificación (consolidado) */
+.calificacion-toggle {
+  margin-top: 6px;
+}
+
+.calificacion-toggle .btn-ghost {
+  padding: 0.4rem 0.7rem;
+  font-weight: 700;
+}
+
+.calificacion-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease, padding 180ms ease, background-color 180ms ease;
+  padding: 0;
+  margin-top: 0;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.calificacion-panel.open {
+  padding: 10px;
+  max-height: 600px;
+  margin-top: 8px;
+  background: rgba(16, 78, 167, 0.03);
+  border: 1px solid rgba(16, 78, 167, 0.06);
+}
+
+.calificacion-panel .cancel-label {
+  font-weight: 700;
+  color: #06314f;
+}
+
+.calificacion-panel .cancel-text {
+  color: #083049;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.calificacion-panel>div+div {
+  margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 720px) {
+  .turno-card {
+    flex-direction: column;
+    align-items: stretch;
+    width: auto;
+  }
+
+  .avatar-mini {
+    margin: 0 auto;
+  }
+
+  .turno-right {
+    flex-direction: row;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .turno-right>div {
+    flex-direction: row;
+  }
+
+  .turno-right button,
+  .turno-right .btn-ghost,
+  .turno-right .btn-danger {
+    width: auto;
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calificacion-panel.open {
+    padding: 8px;
+    max-height: 400px;
+  }
+
+  .calificacion-toggle .btn-ghost {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Small utility tweaks (kept minimal) */
+.fecha-hora {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

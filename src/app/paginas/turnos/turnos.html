@@ -1,0 +1,167 @@
+<app-navbar></app-navbar>
+
+<h1 class="titulo">Turnos</h1>
+
+<div class="app-container">
+    <div class="tarjeta-mis-turnos">
+
+        <!-- Filtro único (especialidad o especialista, sin combobox) -->
+        <div class="header-controls">
+            <div class="filtros">
+                <input #filterInput type="text" class="input-buscador"
+                    placeholder="Filtrar por especialidad o especialista"
+                    (input)="filtrarTurnosAdmin(obtenerValorInput($event))" />
+
+                <button class="btn-ghost" (click)="limpiarFiltro(filterInput)">Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="resumen">
+            <h2>Turnos de la clínica</h2>
+            <div class="muted">Total: <strong>{{ filteredTurnos.length }}</strong></div>
+        </div>
+
+        <!-- Estados globales -->
+        <div *ngIf="loading" class="empty">Cargando turnos...</div>
+        <div *ngIf="!loading && error" class="empty">{{ error }}</div>
+
+        <!-- Lista de turnos -->
+        <div class="turnos-list" *ngIf="!loading && !error">
+            <div *ngIf="filteredTurnos.length === 0" class="empty"> No hay turnos para mostrar </div>
+
+            <div *ngFor="let t of filteredTurnos; trackBy: trackById" class="turno-card">
+                <div class="turno-left">
+                    <div class="avatar-mini">
+                        <img [src]="t.usuarios_especialista?.avatar || t.avatar || defaultAvatar"
+                            [alt]="t.usuarios_especialista?.nombre ? (t.usuarios_especialista?.nombre + ' ' + (t.usuarios_especialista?.apellido || '')) : 'Avatar'" />
+
+                    </div>
+                </div>
+
+                <div class="turno-body">
+                    <div class="fila-1">
+                        <div class="persona">
+                            <strong>Especialista:</strong>
+                            {{ t.usuarios_especialista?.nombre || '—' }} {{ t.usuarios_especialista?.apellido || '' }}
+                        </div>
+                    </div>
+                    <div class="fila-1">
+                        <div class="persona">
+                            <strong>Paciente:</strong>
+                            {{ t.usuarios_paciente?.nombre || '—' }} {{ t.usuarios_paciente?.apellido || '' }}
+                        </div>
+                    </div>
+
+
+                    <!-- Metadatos: cada dato en su propio renglón -->
+                    <div class="fila-2 datos-turno">
+                        <div class="dato"><span class="muted">Especialidad:</span> <strong>{{ t.especialidad || '—'
+                                }}</strong></div>
+                    </div>
+
+                    <div class="fila-2 datos-turno">
+                        <div class="dato"><span class="muted">Día:</span> <strong>{{ t.fecha || '—' }}</strong></div>
+                    </div>
+
+                    <div class="fila-2 datos-turno">
+                        <div class="dato"><span class="muted">Hora:</span> <strong>{{ t.hora || '—' }}</strong></div>
+                    </div>
+
+                    <!-- Toggle reseña (si existe) -->
+                    <div class="resena-toggle" *ngIf="t.estado === 'atendido'">
+                        <button class="btn-ghost" (click)="toggleResena(t)">
+                            {{ expandedResenaId === t.id ? 'Ocultar reseña' : 'Ver reseña' }}
+                        </button>
+                    </div>
+
+                    <div class="resena-panel" [class.open]="expandedResenaId === t.id"
+                        *ngIf="t.resenia || t.diagnostico || expandedResenaId === t.id">
+                        <div *ngIf="t.resenia">
+                            <div class="cancel-label muted">Reseña:</div>
+                            <div class="cancel-text">{{ t.resenia }}</div>
+                        </div>
+
+                        <div *ngIf="t.diagnostico" style="margin-top:6px;">
+                            <div class="cancel-label muted">Diagnóstico:</div>
+                            <div class="cancel-text">{{ t.diagnostico }}</div>
+                        </div>
+
+                        <div *ngIf="!t.resenia && !t.diagnostico && expandedResenaId === t.id" class="muted">
+                            No hay reseña ni diagnóstico registrados aún.
+                        </div>
+                    </div>
+
+                    <!-- Toggle calificación/encuesta (separado de la reseña) -->
+                    <div class="calificacion-toggle" *ngIf="t.estado === 'atendido' && (t.encuesta || t.comentario)">
+                        <button class="btn-ghost" (click)="toggleCalificacion(t)">
+                            {{ expandedCalificacionId === t.id ? 'Ocultar calificación' : 'Ver calificación' }}
+                        </button>
+                    </div>
+
+                    <div class="calificacion-panel" [class.open]="expandedCalificacionId === t.id"
+                        *ngIf="t.encuesta || t.comentario || expandedCalificacionId === t.id">
+                        <div *ngIf="t.encuesta">
+                            <div class="cancel-label muted">Encuesta:</div>
+                            <div class="cancel-text">Conformidad: {{ t.encuesta.pregunta1 ?? '—' }} · Recomienda: {{
+                                t.encuesta.pregunta2 ?? '—' }}</div>
+
+                            <div *ngIf="t.encuesta.calificacion !== undefined && t.encuesta.calificacion !== null"
+                                style="margin-top:6px;">
+                                <div class="cancel-label muted">Calificación:</div>
+                                <div class="cancel-text">{{ t.encuesta.calificacion }} / 5</div>
+                            </div>
+
+                            <div *ngIf="t.encuesta.comentario" style="margin-top:6px;">
+                                <div class="cancel-label muted">Comentario encuesta:</div>
+                                <div class="cancel-text">{{ t.encuesta.comentario }}</div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="t.comentario">
+                            <div class="cancel-label muted" style="margin-top:8px;">Comentario del paciente:</div>
+                            <div class="cancel-text">{{ t.comentario }}</div>
+                        </div>
+
+                        <div *ngIf="!t.encuesta && !t.comentario && expandedCalificacionId === t.id" class="muted">
+                            No hay encuesta ni calificación registradas aún.
+                        </div>
+                    </div>
+
+                    <!-- Mostrar motivo de cancelación si existe -->
+                    <div class="cancel-comment" *ngIf="t.comentarioCancelacion">
+                        <div class="cancel-label muted">Motivo de la cancelación:</div>
+                        <div class="cancel-text">{{ t.comentarioCancelacion }}</div>
+                    </div>
+
+                    <!-- Inline form para cancelar turno (admin) -->
+                    <div class="cancel-form" *ngIf="cancelingTurnoId === t.id">
+                        <div class="cancel-label">Motivo de la cancelación (obligatorio):</div>
+                        <textarea class="cancel-textarea" [(ngModel)]="cancelMotivoMap[t.id]" rows="3"
+                            placeholder="Escribí el motivo..."></textarea>
+
+                        <div class="cancel-actions">
+                            <button class="btn-ghost" (click)="abortCancelarTurno()">Cancelar</button>
+                            <button class="btn-danger" [disabled]="!(cancelMotivoMap[t.id] || '').trim()"
+                                (click)="confirmCancelarTurno(t)">
+                                Aceptar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="turno-right">
+                    <div class="estado-compact" [ngClass]="t.estado">{{ t.estado }}</div>
+
+                    <div *ngIf="cancelingTurnoId !== t.id">
+                        <!-- Mostrar botón cancelar solo si el turno está pendiente -->
+                        <button class="btn-danger" *ngIf="t.estado === 'pendiente'" (click)="startCancelarTurno(t)">
+                            Cancelar Turno
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

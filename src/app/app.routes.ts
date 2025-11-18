@@ -10,5 +10,6 @@ export const routes: Routes = [
   { path: 'usuarios', loadComponent: () => import('./paginas/usuarios/usuarios').then(m => m.Usuarios), canActivate: [AdminGuard] },
   { path: 'mi-perfil', loadComponent: () => import('./paginas/mi-perfil/mi-perfil').then(m => m.MiPerfil) },
   { path: 'solicitar-turno', loadComponent: () => import('./paginas/solicitar-turno/solicitar-turno').then(m => m.SolicitarTurno), canActivate: [PacienteGuard] },
-  //{ path: 'mis-turnos', loadComponent: () => import('./paginas/mis-turnos/mis-turnos').then(m => m.MisTurnos) },
+  { path: 'mis-turnos', loadComponent: () => import('./paginas/mis-turnos/mis-turnos').then(m => m.MisTurnos) },
+  { path: 'turnos', loadComponent: () => import('./paginas/turnos/turnos').then(m => m.Turnos) },
 ];

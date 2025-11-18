@@ -14,7 +14,8 @@
       <h2 *ngIf="role === 'admin'">Están a tu disposición las tareas administrativas que desees realizar</h2>
     </div>
     <div>
-      <button routerLink="/mis-turnos" *ngIf="role === 'paciente'">Ver mis turnos</button>
+      <button routerLink="/mis-turnos" *ngIf="role === 'paciente' || role === 'especialista'">Ver mis turnos</button>
+      <button routerLink="/turnos" *ngIf="role === 'admin'">Ver turnos</button>
       <button routerLink="/solicitar-turno" *ngIf="role === 'paciente' || role === 'admin'">Solicitar turno</button>
     </div>
   </div>

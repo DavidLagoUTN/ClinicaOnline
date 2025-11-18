@@ -6,6 +6,7 @@ export class Turno {
     public especialidad: string,
     public fechaHora: Date,
     public comentario: string | null,
+    public diagnostico: string | null,
     public resenia: string | null,
     public encuestaCompletada: boolean,
     public estado: string,
