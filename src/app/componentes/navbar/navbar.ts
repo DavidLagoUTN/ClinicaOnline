@@ -22,6 +22,7 @@ export class Navbar implements OnInit {
   apellidoUsuario: string | null = null;
   isLoggedIn = false;
   esAdmin = false;
+  esEspecialista = false;
   tipoUsuario: string = '';
 
   private firestore: Firestore = inject(Firestore);
@@ -59,6 +60,7 @@ export class Navbar implements OnInit {
 
     if (!this.isLoggedIn) {
       this.esAdmin = false;
+      this.esEspecialista = false;
       this.nombreUsuario = null;
       this.apellidoUsuario = null;
       return;
@@ -72,9 +74,11 @@ export class Navbar implements OnInit {
       this.apellidoUsuario = data?.['apellido'] || null;
       this.tipoUsuario = data?.['tipo'] || '';
       this.esAdmin = this.tipoUsuario === 'admin';
+      this.esEspecialista = this.tipoUsuario === 'especialista';
 
     } catch {
       this.esAdmin = false;
+      this.esEspecialista = false;
     }
   }
 

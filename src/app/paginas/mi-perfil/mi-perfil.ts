@@ -10,6 +10,8 @@ import { diasSemana, DiaClave, RangoHorario, DisponibilidadSemanal, Especialista
 import { rangoValido, rangoCumpleMinimo, normalizarRangos } from '../../utils/horario.utils';
 import { Navbar } from '../../componentes/navbar/navbar';
 import { map } from 'rxjs';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 type TipoUsuario = 'paciente' | 'especialista' | 'admin';
 
@@ -23,6 +25,11 @@ type TipoUsuario = 'paciente' | 'especialista' | 'admin';
 export class MiPerfil implements OnInit, AfterViewInit {
   uid = '';
   especialista: Especialista | null = null;
+
+  historiasMap: { [pacienteUid: string]: any | any[] | null } = {};
+  loadingHistoriaMap: { [pacienteUid: string]: boolean } = {};
+
+  generandoPdfMap: { [uid: string]: boolean } = {};
 
   // campos del perfil, cargados desde Firestore
   nombre = '';
@@ -78,119 +85,124 @@ export class MiPerfil implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
-  const user = this.auth.currentUser;
-  if (!user) {
-    this.tipo = 'paciente';
-    return;
-  }
-  this.uid = user.uid;
-  this.loading = true;
-
-  try {
-    const ref = doc(this.firestore, 'usuarios', this.uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      this.loading = false;
+    const user = this.auth.currentUser;
+    if (!user) {
+      this.tipo = 'paciente';
       return;
     }
+    this.uid = user.uid;
+    this.loading = true;
 
-    const data = snap.data() as any;
-
-    this.nombre = data.nombre || '';
-    this.apellido = data.apellido || '';
-    this.edad = typeof data.edad === 'number' ? data.edad : data.edad ? Number(data.edad) : undefined;
-    this.dni = data.dni || undefined;
-    this.mail = data.mail || data.email || (this.auth.currentUser?.email ?? '');
-    this.imagenPerfil = data.imagenPerfil ?? null;
-    this.imagenPerfilExtra = data.imagenPerfilExtra ?? null;
-    this.obraSocial = data.obraSocial ?? null;
-    this.especialidades = Array.isArray(data.especialidades) ? data.especialidades : [];
-
-    const tipoBD = String(data.tipo ?? '').toLowerCase();
-    if (tipoBD === 'paciente' || tipoBD === 'especialista' || tipoBD === 'admin') {
-      this.tipo = tipoBD as TipoUsuario;
-    } else {
-      console.warn(`Tipo de usuario inválido en DB para uid=${this.uid}:`, data.tipo);
-      this.tipo = 'paciente';
+    if (this.tipo === 'paciente') {
+      // cargar la historia del paciente al entrar en la página
+      await this.loadHistoria(this.uid);
     }
 
-    if (this.tipo === 'especialista') {
-      this.especialista = data as Especialista;
-      // asignar duración con fallback 30
-      this.duracionTurno = typeof data.duracionTurno === 'number' ? data.duracionTurno : 30;
-      this.duracionTurnoTmp = this.duracionTurno;
-      // sobreescribimos disponibilidadLocal con la que venga de la DB, asegurando claves
-      const fromDb: DisponibilidadSemanal = this.especialista.disponibilidad || {};
-      for (const dia of diasSemana) {
-        this.disponibilidadLocal[dia] = Array.isArray(fromDb[dia]) ? [...fromDb[dia]!] : [];
+    try {
+      const ref = doc(this.firestore, 'usuarios', this.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        this.loading = false;
+        return;
       }
 
-      // preparar selección local de especialidades
-      this.seleccionadasLocal = Array.isArray(this.especialidades) ? [...this.especialidades] : [];
+      const data = snap.data() as any;
 
-      // Suscribirse al catálogo completo de especialidades (mismo pipeline que en registro.ts)
-      this.especialidadesSvc.listAll().pipe(
-        map((list: any[]) =>
-          list
-            .map(i => i.nombre)
-            .filter(Boolean)
-            .map((s: string) => s.trim())
-            .sort((a: string, b: string) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-        )
-      ).subscribe((nombres: string[]) => {
-        this.todasEspecialidades = nombres;
-        // asegurar que la selección local existe y marque correctamente las casillas
-        if (!Array.isArray(this.seleccionadasLocal)) {
-          this.seleccionadasLocal = Array.isArray(this.especialidades) ? [...this.especialidades] : [];
+      this.nombre = data.nombre || '';
+      this.apellido = data.apellido || '';
+      this.edad = typeof data.edad === 'number' ? data.edad : data.edad ? Number(data.edad) : undefined;
+      this.dni = data.dni || undefined;
+      this.mail = data.mail || data.email || (this.auth.currentUser?.email ?? '');
+      this.imagenPerfil = data.imagenPerfil ?? null;
+      this.imagenPerfilExtra = data.imagenPerfilExtra ?? null;
+      this.obraSocial = data.obraSocial ?? null;
+      this.especialidades = Array.isArray(data.especialidades) ? data.especialidades : [];
+
+      const tipoBD = String(data.tipo ?? '').toLowerCase();
+      if (tipoBD === 'paciente' || tipoBD === 'especialista' || tipoBD === 'admin') {
+        this.tipo = tipoBD as TipoUsuario;
+      } else {
+        console.warn(`Tipo de usuario inválido en DB para uid=${this.uid}:`, data.tipo);
+        this.tipo = 'paciente';
+      }
+
+      if (this.tipo === 'especialista') {
+        this.especialista = data as Especialista;
+        // asignar duración con fallback 30
+        this.duracionTurno = typeof data.duracionTurno === 'number' ? data.duracionTurno : 30;
+        this.duracionTurnoTmp = this.duracionTurno;
+        // sobreescribimos disponibilidadLocal con la que venga de la DB, asegurando claves
+        const fromDb: DisponibilidadSemanal = this.especialista.disponibilidad || {};
+        for (const dia of diasSemana) {
+          this.disponibilidadLocal[dia] = Array.isArray(fromDb[dia]) ? [...fromDb[dia]!] : [];
         }
-      }, err => {
-        console.error('Error cargando especialidades', err);
-      });
-    }
 
-    // forzar recálculo del ancho de .campo después del render
-    setTimeout(() => this.applyCampoMinPx(), 0);
-  } finally {
-    this.loading = false;
+        // preparar selección local de especialidades
+        this.seleccionadasLocal = Array.isArray(this.especialidades) ? [...this.especialidades] : [];
+
+        // Suscribirse al catálogo completo de especialidades (mismo pipeline que en registro.ts)
+        this.especialidadesSvc.listAll().pipe(
+          map((list: any[]) =>
+            list
+              .map(i => i.nombre)
+              .filter(Boolean)
+              .map((s: string) => s.trim())
+              .sort((a: string, b: string) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+          )
+        ).subscribe((nombres: string[]) => {
+          this.todasEspecialidades = nombres;
+          // asegurar que la selección local existe y marque correctamente las casillas
+          if (!Array.isArray(this.seleccionadasLocal)) {
+            this.seleccionadasLocal = Array.isArray(this.especialidades) ? [...this.especialidades] : [];
+          }
+        }, err => {
+          console.error('Error cargando especialidades', err);
+        });
+      }
+
+      // forzar recálculo del ancho de .campo después del render
+      setTimeout(() => this.applyCampoMinPx(), 0);
+    } finally {
+      this.loading = false;
+    }
   }
-}
 
   ngAfterViewInit(): void {
     setTimeout(() => this.applyCampoMinPx(), 0);
   }
 
   cancelarEditarDuracion(): void {
-  this.duracionTurnoTmp = this.duracionTurno;
-  this.editarDuracion = false;
-}
-
-async guardarDuracion(): Promise<void> {
-  const val = Number(this.duracionTurnoTmp ?? this.duracionTurno);
-  if (!Number.isFinite(val) || !Number.isInteger(val) || val < 5) {
-    this.snackBar.open('Ingresá un número válido (min 5 minutos)', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-    return;
+    this.duracionTurnoTmp = this.duracionTurno;
+    this.editarDuracion = false;
   }
 
-  try {
-    const uid = this.uid || (this.auth.currentUser?.uid ?? '');
-    if (!uid) throw new Error('Usuario no identificado');
-
-    const userRef = doc(this.firestore, 'usuarios', uid);
-
-    try {
-      await updateDoc(userRef, { duracionTurno: val });
-    } catch (err) {
-      await setDoc(userRef, { duracionTurno: val }, { merge: true });
+  async guardarDuracion(): Promise<void> {
+    const val = Number(this.duracionTurnoTmp ?? this.duracionTurno);
+    if (!Number.isFinite(val) || !Number.isInteger(val) || val < 5) {
+      this.snackBar.open('Ingresá un número válido (min 5 minutos)', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      return;
     }
 
-    this.duracionTurno = val;
-    this.editarDuracion = false;
-    this.snackBar.open('Duración guardada', undefined, { duration: 2000 });
-  } catch (err) {
-    console.error('Error guardando duración', err);
-    this.snackBar.open('No se pudo guardar la duración', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+    try {
+      const uid = this.uid || (this.auth.currentUser?.uid ?? '');
+      if (!uid) throw new Error('Usuario no identificado');
+
+      const userRef = doc(this.firestore, 'usuarios', uid);
+
+      try {
+        await updateDoc(userRef, { duracionTurno: val });
+      } catch (err) {
+        await setDoc(userRef, { duracionTurno: val }, { merge: true });
+      }
+
+      this.duracionTurno = val;
+      this.editarDuracion = false;
+      this.snackBar.open('Duración guardada', undefined, { duration: 2000 });
+    } catch (err) {
+      console.error('Error guardando duración', err);
+      this.snackBar.open('No se pudo guardar la duración', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+    }
   }
-}
 
 
   // ======================
@@ -461,4 +473,250 @@ async guardarDuracion(): Promise<void> {
     document.documentElement.style.setProperty('--campo-min-px', `${final}px`);
     return final;
   }
+
+  async loadHistoria(pacienteUid: string): Promise<void> {
+  if (!pacienteUid) {
+    this.historiasMap[pacienteUid] = null;
+    return;
+  }
+
+  // evitar recarga si ya está en cache (undefined = no cargado aún)
+  if (this.historiasMap[pacienteUid] !== undefined) return;
+
+  this.loadingHistoriaMap[pacienteUid] = true;
+  try {
+    const especialistaUid = this.auth.currentUser?.uid;
+    const historias = await this.usersService.getHistoriaClinica(pacienteUid, especialistaUid);
+
+    if (!historias) {
+      this.historiasMap[pacienteUid] = null;
+      return;
+    }
+
+    // Si el servicio devolvió un array de documentos
+    if (Array.isArray(historias)) {
+      this.historiasMap[pacienteUid] = historias.map(h => ({
+        // no usar ...h si h puede ser primitivo; asumimos objeto, pero protegemos campos
+        id: (h && (h as any).id) ?? null,
+        peso: (h && (h as any).peso) ?? (h && (h as any).pesoKg) ?? null,
+        altura: (h && (h as any).altura) ?? (h && (h as any).talla) ?? null,
+        temperatura: (h && (h as any).temperatura) ?? null,
+        presion: (h && (h as any).presion) ?? null,
+        dinamicos: Array.isArray((h && (h as any).dinamicos)) ? (h as any).dinamicos : [],
+        creadoPor: (h && (h as any).creadoPor) ?? (h && (h as any).registradoPor) ?? null,
+        raw: h
+      }));
+      return;
+    }
+
+    // Si el servicio devolvió un único objeto (documento)
+    if (typeof historias === 'object') {
+      const h = historias as any;
+      this.historiasMap[pacienteUid] = {
+        id: h.id ?? null,
+        peso: h.peso ?? h.pesoKg ?? null,
+        altura: h.altura ?? h.talla ?? null,
+        temperatura: h.temperatura ?? null,
+        presion: h.presion ?? null,
+        dinamicos: Array.isArray(h.dinamicos) ? h.dinamicos : [],
+        creadoPor: h.creadoPor ?? h.registradoPor ?? null,
+        raw: h
+      };
+      return;
+    }
+
+    // Fallback: no válido
+    this.historiasMap[pacienteUid] = null;
+  } catch (err) {
+    console.error('loadHistoria error', err);
+    this.historiasMap[pacienteUid] = null;
+  } finally {
+    this.loadingHistoriaMap[pacienteUid] = false;
+    try { (this as any).cd?.detectChanges?.(); } catch {}
+  }
+}
+
+async downloadHistoriaPdf(pacienteUid: string): Promise<void> {
+  console.log('downloadHistoriaPdf called for', pacienteUid);
+  if (!pacienteUid) return;
+
+  if (this.generandoPdfMap[pacienteUid]) return;
+  this.generandoPdfMap[pacienteUid] = true;
+
+  try {
+    const el = document.getElementById(`historia-${pacienteUid}`);
+    if (!el) {
+      console.warn('No se encontró el contenedor de la historia clínica para uid=', pacienteUid);
+      return;
+    }
+
+    // Determinar nombre del paciente para el título (fallback al uid)
+    let pacienteNombre = pacienteUid;
+    if (this.uid === pacienteUid && (this.nombre || this.apellido)) {
+      pacienteNombre = `${this.nombre || ''} ${this.apellido || ''}`.trim();
+    } else {
+      // intentar extraer nombre desde historiasMap (si el servicio lo provee)
+      const hmap = this.historiasMap[pacienteUid];
+      if (hmap) {
+        if (Array.isArray(hmap) && hmap.length > 0) {
+          pacienteNombre = (hmap[0].pacienteNombre || hmap[0].nombre || pacienteNombre);
+        } else if (typeof hmap === 'object') {
+          pacienteNombre = (hmap.pacienteNombre || hmap.nombre || pacienteNombre);
+        }
+      }
+    }
+
+    // Cargar logo como dataURL (ruta pública)
+    const logoUrl = '/assets/favicon.ico';
+    const loadImageAsDataUrl = async (url: string): Promise<string | null> => {
+      try {
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (!resp.ok) return null;
+        const blob = await resp.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.warn('No se pudo cargar logo para PDF', err);
+        return null;
+      }
+    };
+
+    const logoDataUrl = await loadImageAsDataUrl(logoUrl);
+
+    // Forzar fondo blanco temporalmente para mejor resultado
+    const prevBg = el.style.background;
+    el.style.background = '#ffffff';
+
+    // Capturar el contenido con html2canvas
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false
+    });
+    const contentImg = canvas.toDataURL('image/png');
+
+    // Crear PDF A4 vertical
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // Encabezado: logo + "Clínica DLL" + título centrado + fecha
+    const margin = 12; // margen lateral en mm
+    const headerTop = 8; // posición Y del encabezado (mm)
+    const headerHeightMm = 22; // espacio reservado para encabezado
+
+    // Dibujar logo y texto "Clínica DLL" a la izquierda del encabezado
+    if (logoDataUrl) {
+      try {
+        const logoProps = (pdf as any).getImageProperties(logoDataUrl);
+        const logoWpx = logoProps.width || 32;
+        const logoHpx = logoProps.height || 32;
+
+        // convertimos una aproximación px->mm usando ancho utilizable del PDF y ancho del canvas
+        const usableWidth = pdfWidth - margin * 2;
+        const approxPxToMm = usableWidth / canvas.width;
+        const maxLogoHeightMm = headerHeightMm - 6;
+        const logoHeightMm = Math.min(maxLogoHeightMm, logoHpx * approxPxToMm);
+        const logoWidthMm = (logoWpx / logoHpx) * logoHeightMm;
+
+        // dibujar logo
+        pdf.addImage(logoDataUrl, 'PNG', margin, headerTop - 2, logoWidthMm, logoHeightMm);
+
+        // texto "Clínica DLL" al lado del logo
+        pdf.setFontSize(12);
+        pdf.setTextColor('#083049');
+        const textX = margin + logoWidthMm + 4;
+        const textY = headerTop + (logoHeightMm / 2) + 1;
+        pdf.text('Clínica DLL', textX, textY);
+      } catch (err) {
+        // si falla dibujar logo, no interrumpimos la generación
+        console.warn('No se pudo dibujar el logo en el PDF', err);
+      }
+    } else {
+      // si no hay logo, igual dibujamos el nombre de la clínica a la izquierda
+      pdf.setFontSize(12);
+      pdf.setTextColor('#083049');
+      pdf.text('Clínica DLL', margin, headerTop + 6);
+    }
+
+    // Título centrado con nombre del paciente
+    const titulo = `Informe de Historia Clínica de ${pacienteNombre}`;
+    pdf.setFontSize(14);
+    pdf.setTextColor('#083049');
+    pdf.text(titulo, pdfWidth / 2, headerTop + 6, { align: 'center' });
+
+    // Fecha de emisión debajo del título
+    const fecha = new Date();
+    const fechaStr = fecha.toLocaleString('es-AR', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+    pdf.setFontSize(10);
+    pdf.setTextColor('#6b7280');
+    pdf.text(`Fecha emisión: ${fechaStr}`, pdfWidth / 2, headerTop + 11, { align: 'center' });
+
+    // Insertar contenido capturado debajo del encabezado
+    const usableWidth = pdfWidth - margin * 2;
+    const imgPropsContent = (pdf as any).getImageProperties(contentImg);
+    const imgWpx = imgPropsContent.width || canvas.width;
+    const imgHpx = imgPropsContent.height || canvas.height;
+    const pxToMmContent = usableWidth / imgWpx;
+    const imgHeightMm = imgHpx * pxToMmContent;
+
+    const availableHeightMm = pdfHeight - headerHeightMm - 12; // espacio para contenido en la primera página
+
+    if (imgHeightMm <= availableHeightMm) {
+      pdf.addImage(contentImg, 'PNG', margin, headerHeightMm, usableWidth, imgHeightMm);
+    } else {
+      // paginar el contenido capturado
+      const fullCanvas = canvas;
+      const fullWidthPx = imgWpx;
+      const pageHeightPx = Math.floor(fullWidthPx * (availableHeightMm / usableWidth));
+      let remainingHeightPx = imgHpx;
+      let positionY = 0;
+      const tmpCanvas = document.createElement('canvas');
+      const tmpCtx = tmpCanvas.getContext('2d')!;
+      tmpCanvas.width = fullWidthPx;
+      tmpCanvas.height = pageHeightPx;
+
+      let firstPage = true;
+      while (remainingHeightPx > 0) {
+        tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+        tmpCtx.drawImage(fullCanvas, 0, positionY, fullWidthPx, pageHeightPx, 0, 0, fullWidthPx, pageHeightPx);
+        const pageData = tmpCanvas.toDataURL('image/png');
+
+        if (firstPage) {
+          pdf.addImage(pageData, 'PNG', margin, headerHeightMm, usableWidth, pageHeightPx * pxToMmContent);
+          firstPage = false;
+        } else {
+          pdf.addPage();
+          // si querés repetir encabezado en páginas siguientes, podés dibujarlo aquí también
+          pdf.addImage(pageData, 'PNG', margin, 10, usableWidth, pageHeightPx * pxToMmContent);
+        }
+
+        positionY += pageHeightPx;
+        remainingHeightPx -= pageHeightPx;
+      }
+    }
+
+    // Guardar PDF
+    const filename = `historia_${pacienteUid}.pdf`;
+    pdf.save(filename);
+
+    // restaurar fondo
+    el.style.background = prevBg;
+  } catch (err) {
+    console.error('Error generando PDF de historia clínica', err);
+  } finally {
+    this.generandoPdfMap[pacienteUid] = false;
+  }
+}
+
+
+
 }

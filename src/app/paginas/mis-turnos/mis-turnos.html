@@ -37,7 +37,8 @@
 
         <div class="turno-body"> <!-- Header: persona (estado en header eliminado para evitar duplicado) -->
           <div class="fila-1">
-            <div class="persona"> <ng-container *ngIf="viewMode === 'paciente'"> <strong>Especialista:</strong> {{
+            <div class="persona" style="font-size:medium"> <ng-container *ngIf="viewMode === 'paciente'">
+                <strong>Especialista:</strong> {{
                 t.usuarios_especialista?.nombre || '—' }} {{ t.usuarios_especialista?.apellido || '' }} </ng-container>
 
               <ng-container *ngIf="viewMode === 'especialista'"> <strong>Paciente:</strong> {{
@@ -140,21 +141,113 @@
             <div class="cancel-text">{{ t.comentarioRechazo }}</div>
           </div>
 
+          <!-- FORM: finalización (reseña + diagnóstico + historia clínica) -->
           <div class="final-form" *ngIf="finalizingTurnoId === t.id">
-            <div class="cancel-label">Reseña / comentario de la consulta:</div>
-
+            <div class="cancel-label" style="margin-top:8px; font-size:medium">Reseña / comentario de la consulta:</div>
             <textarea class="cancel-textarea" [(ngModel)]="finalReseniaMap[t.id]" rows="3"
               placeholder="Escribí la reseña..."></textarea>
 
-            <div class="cancel-label">Diagnóstico:</div> <textarea class="cancel-textarea"
-              [(ngModel)]="finalDiagnosticoMap[t.id]" rows="3" placeholder="Escribí el diagnóstico..."></textarea>
+            <div class="cancel-label" style="margin-top:8px; font-size:medium">Diagnóstico:</div>
+            <textarea class="cancel-textarea" [(ngModel)]="finalDiagnosticoMap[t.id]" rows="3"
+              placeholder="Escribí el diagnóstico..."></textarea>
 
-            <div class="cancel-actions"> <button class="btn-ghost" (click)="abortFinalizarTurno()">Cancelar</button>
-              <button class="btn-danger"
-                [disabled]="!finalReseniaMap[t.id] || finalReseniaMap[t.id].trim() === '' || !finalDiagnosticoMap[t.id] || finalDiagnosticoMap[t.id].trim() === ''"
-                (click)="confirmFinalizarTurno(t)"> Aceptar </button>
+            <!-- Título Historia clínica -->
+            <div class="cancel-label" style="margin-top:12px; font-weight:700; font-size:large ;">Historia clínica</div>
+
+            <!-- Historia clínica inline asociada al turno -->
+            <div class="historia-form" style="margin-top:8px;">
+              <div class="cancel-label">Altura (cm):</div>
+              <input class="form-control" type="number" [(ngModel)]="historiaDraftMap[t.id].altura" />
+
+              <div class="cancel-label" style="margin-top:6px;">Peso (kg):</div>
+              <input class="form-control" type="number" [(ngModel)]="historiaDraftMap[t.id].peso" />
+
+              <div class="cancel-label" style="margin-top:6px;">Temperatura (°C):</div>
+              <input class="form-control" type="number" [(ngModel)]="historiaDraftMap[t.id].temperatura" />
+
+              <div class="cancel-label" style="margin-top:6px;">Presión (mmHg):</div>
+              <input class="form-control" type="text" [(ngModel)]="historiaDraftMap[t.id].presion" />
+            </div>
+
+            <!-- Datos opcionales (dinámicos, agregables con botón) -->
+            <div class="cancel-label" style="margin-top:12px; font-weight:700;">Datos opcionales</div>
+
+            <div class="opcionales-list" style="margin-top:8px;">
+              <div *ngFor="let od of historiaDraftMap[t.id].opcionales; let oi = index"
+                style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                <input class="form-control clave-input" placeholder="Ej: Caries"
+                  [(ngModel)]="historiaDraftMap[t.id].opcionales[oi].clave" />
+                <input class="form-control valor-input" placeholder="Ej: 4"
+                  [(ngModel)]="historiaDraftMap[t.id].opcionales[oi].valor" />
+                <button class="btn-ghost" type="button" (click)="removeOptionalDinamico(t.id, oi)">Eliminar</button>
+              </div>
+
+              <div style="margin-top:6px;">
+                <button class="btn-ghost" type="button"
+                  *ngIf="(historiaDraftMap[t.id]?.opcionales?.length || 0) < maxOptionalDinamicos"
+                  (click)="addOptionalDinamico(t.id)">
+                  Agregar dato
+                </button>
+              </div>
+            </div>
+
+            <!-- Otros datos (3 dinámicos obligatorios) -->
+            <div class="cancel-label" style="margin-top:12px; font-weight:700; font-size:medium">Otros datos</div>
+
+            <div class="otros-datos" style="margin-top:8px;">
+              <!-- Cada fila usa layout con clave de ancho fijo igual para las 3 -->
+              <div class="dato-item" style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                <input class="form-control clave-input" placeholder="Ej: Saturación"
+                  [(ngModel)]="historiaDraftMap[t.id].dinamicos[0].clave" />
+
+                <div class="valor-container" style="display:flex; gap:8px; align-items:center; flex:1;">
+                  <input class="range-control" type="range" min="0" max="100"
+                    [(ngModel)]="historiaDraftMap[t.id].dinamicos[0].valor" (input)="onRangeChange(t.id, 0)" />
+                  <!-- campo de solo lectura que muestra el valor seleccionado -->
+                  <input class="form-control valor-number readonly" type="text"
+                    [value]="historiaDraftMap[t.id].dinamicos[0].valor" readonly />
+                </div>
+              </div>
+
+              <div class="dato-item" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <input class="form-control clave-input" placeholder="Ej: Frecuencia cardíaca"
+                  [(ngModel)]="historiaDraftMap[t.id].dinamicos[1].clave" />
+                <input class="form-control" type="number" inputmode="numeric" pattern="[0-9]*"
+                  [(ngModel)]="historiaDraftMap[t.id].dinamicos[1].valor" (keydown)="onlyNumberKey($event)"
+                  style="width:140px;" />
+              </div>
+
+              <div class="dato-item" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <input class="form-control clave-input" placeholder="Ej: Fumador"
+                  [(ngModel)]="historiaDraftMap[t.id].dinamicos[2].clave" />
+
+                <!-- Switch visual y accesible -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label class="switch">
+                    <input type="checkbox" [(ngModel)]="historiaDraftMap[t.id].dinamicos[2].valor" />
+                    <span class="slider"></span>
+                  </label>
+                  <span style="min-width:28px; text-align:left;">{{ historiaDraftMap[t.id].dinamicos[2].valor ? 'Sí' :
+                    'No' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cancel-actions" style="margin-top:12px;">
+              <button class="btn-ghost" type="button" (click)="abortFinalizarTurno()">Cancelar</button>
+
+              <button class="btn-danger" type="button" [disabled]="
+        !finalReseniaMap[t.id] || !finalReseniaMap[t.id].trim()
+        || !finalDiagnosticoMap[t.id] || !finalDiagnosticoMap[t.id].trim()
+        || !validarHistoriaDraft(t.id)
+      " (click)="confirmFinalizarTurno(t)">
+                Aceptar
+              </button>
             </div>
           </div>
+
+
+
 
           <!-- FORM: encuesta 2 preguntas -->
           <div class="survey-form" *ngIf="surveyFillingTurnoId === t.id">

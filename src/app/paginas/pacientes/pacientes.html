@@ -1,0 +1,192 @@
+<app-navbar></app-navbar>
+
+<h1 class="titulo">Pacientes atendidos</h1>
+
+<div class="app-container">
+    <div class="tarjeta-mis-turnos">
+
+        <!-- Filtro simple -->
+        <div class="header-controls">
+            <div class="filtros">
+                <input #filterInput type="text" class="input-buscador"
+                    placeholder="Filtrar por nombre, apellido, DNI u obra social"
+                    (input)="filtrarPacientes(obtenerValorInput($event))" />
+                <button class="btn-ghost" (click)="limpiarFiltro(filterInput)">Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="resumen">
+            <h2>Pacientes atendidos</h2>
+            <div class="muted">Total: <strong>{{ filteredPatients.length }}</strong></div>
+        </div>
+
+        <!-- Estados -->
+        <div *ngIf="loading" class="empty">Cargando pacientes...</div>
+        <div *ngIf="!loading && !error && filteredPatients.length === 0" class="empty">No hay pacientes atendidos aún
+        </div>
+        <div *ngIf="!loading && error" class="empty">{{ error }}</div>
+
+        <!-- Lista de cards -->
+        <div class="turnos-list" *ngIf="!loading && !error">
+            <div *ngFor="let p of filteredPatients; trackBy: trackByUid" class="turno-card paciente-card">
+                <div class="turno-left">
+                    <div class="avatar-mini">
+                        <img [src]="p.imagenPerfil || p.imagenPerfilExtra || defaultAvatar"
+                            [alt]="p.nombre || 'Avatar'" />
+                    </div>
+                </div>
+
+                <div class="turno-body">
+                    <div class="fila-1">
+                        <div class="persona">
+                            <strong>{{ p.nombre || '—' }} {{ p.apellido || '' }}</strong>
+                        </div>
+
+                        <div class="nota">
+                            <div>{{ p.turnosAtendidos }} turno(s) atendido(s)</div>
+                        </div>
+                    </div>
+
+                    <!-- Datos: Edad / DNI / Obra Social (cada uno en su propia línea) -->
+                    <div class="fila-2 datos-turno">
+                        <div class="dato-row">
+                            <div class="dato">
+                                <span class="muted">Edad:</span>
+                                <strong>{{ p.edad ?? '—' }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="dato-row">
+                            <div class="dato">
+                                <span class="muted">DNI:</span>
+                                <strong>{{ p.dni || '—' }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="dato-row">
+                            <div class="dato">
+                                <span class="muted">Obra social:</span>
+                                <strong>{{ p.obraSocial || '—' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Últimos 3 turnos: título y lista en una sola línea por turno -->
+                    <div class="fila-2 datos-turno" style="margin-top:8px;">
+                        <div style="width:100%;">
+                            <div class="muted" style="font-weight:600; margin-bottom:6px;">Últimos turnos:</div>
+
+                            <div class="ultima-list-inline">
+                                <ng-container *ngIf="p.ultimosTurnos && p.ultimosTurnos.length > 0; else sinTurnos">
+                                    <div *ngFor="let t of p.ultimosTurnos" class="ultimo-turno-inline"
+                                        title="{{ t.fecha }} · {{ t.hora }} - {{ t.especialidad || '—' }}">
+                                        <div class="turno-left-inline">{{ t.fecha }} · {{ t.hora }}</div>
+                                        <div class="turno-sep"> - </div>
+                                        <div class="turno-right-inline">{{ t.especialidad || '—' }}</div>
+                                    </div>
+                                </ng-container>
+
+                                <ng-template #sinTurnos>
+                                    <div class="muted">No hay turnos registrados</div>
+                                </ng-template>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Panel expandible: historia clínica -->
+                    <div class="resena-toggle" style="margin-top:8px;">
+                        <button class="btn-ghost" (click)="togglePaciente(p)">
+                            {{ expandedPacienteUid === p.uid ? 'Ocultar' : 'Ver historia clínica' }}
+                        </button>
+                    </div>
+
+                    <!-- Reemplazo seguro: usar "as h" para evitar errores de null en plantilla -->
+                    <div class="resena-panel" [class.open]="expandedPacienteUid === p.uid">
+                        <div *ngIf="expandedPacienteUid === p.uid">
+
+                            <div *ngIf="loadingHistoriaMap[p.uid]" class="muted">Cargando historia clínica...</div>
+
+                            <!-- Si existe historia: asignarla a 'h' con 'as' -->
+                            <ng-container *ngIf="!loadingHistoriaMap[p.uid] && historiasMap[p.uid] as h">
+                                <div class="cancel-label muted">Historia clínica</div>
+
+                                <div class="fila-2 datos-turno" style="margin-top:6px;">
+                                    <div class="dato-row"><div class="dato"><span class="muted">Altura:</span> <strong>{{ h.altura ?? '—'
+                                            }} cm</strong></div></div>
+                                    <div class="dato-row"><div class="dato"><span class="muted">Peso:</span> <strong>{{ h.peso ?? '—'
+                                            }} kg</strong></div></div>
+                                    <div class="dato-row"><div class="dato"><span class="muted">Temperatura:</span> <strong>{{ h.temperatura
+                                            ?? '—' }} °C</strong></div></div>
+                                    <div class="dato-row"><div class="dato"><span class="muted">Presión:</span> <strong>{{ h.presion ?? '—'
+                                            }} mmHg</strong></div></div>
+                                </div>
+
+                                <div *ngIf="(h.dinamicos || []).length > 0" style="margin-top:8px;">
+                                    <div class="cancel-label muted">Datos adicionales</div>
+                                    <div *ngFor="let d of (h.dinamicos || [])">
+                                        <div class="cancel-text"><strong>{{ d.clave }}:</strong> {{ d.valor }}</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:10px;">
+                                    <button class="btn-ghost" (click)="editarHistoria(p)">Editar historia
+                                        clínica</button>
+                                </div>
+                            </ng-container>
+
+                            <!-- Si no existe historia -->
+                            <div *ngIf="!loadingHistoriaMap[p.uid] && !historiasMap[p.uid]" style="margin-top:8px;">
+                                <div class="muted">No hay historia clínica cargada para este paciente.</div>
+                                <div style="margin-top:8px;">
+                                    <button class="btn-danger" (click)="iniciarCrearHistoria(p)">Cargar historia
+                                        clínica</button>
+                                </div>
+                            </div>
+
+                            <!-- Formulario inline para crear/editar historia -->
+                            <div *ngIf="editingHistoriaUid === p.uid" class="final-form" style="margin-top:10px;">
+                                <div class="cancel-label">Altura (cm):</div>
+                                <input class="form-control" [(ngModel)]="historiaDraft.altura" type="number" />
+
+                                <div class="cancel-label">Peso (kg):</div>
+                                <input class="form-control" [(ngModel)]="historiaDraft.peso" type="number" />
+
+                                <div class="cancel-label">Temperatura (°C):</div>
+                                <input class="form-control" [(ngModel)]="historiaDraft.temperatura" type="text" />
+
+                                <div class="cancel-label">Presión (mmHg):</div>
+                                <input class="form-control" [(ngModel)]="historiaDraft.presion" type="text" />
+
+                                <div class="cancel-label" style="margin-top:8px;">Datos adicionales (máx. 3)</div>
+                                <div *ngFor="let d of historiaDraft.dinamicos; let i = index"
+                                    style="display:flex; gap:8px; align-items:center;">
+                                    <input class="form-control" placeholder="Clave"
+                                        [(ngModel)]="historiaDraft.dinamicos[i].clave" />
+                                    <input class="form-control" placeholder="Valor"
+                                        [(ngModel)]="historiaDraft.dinamicos[i].valor" />
+                                    <button class="btn-ghost" (click)="removeDinamico(i)">Eliminar</button>
+                                </div>
+                                <div style="margin-top:6px;">
+                                    <button class="btn-ghost" [disabled]="historiaDraft.dinamicos.length >= 3"
+                                        (click)="addDinamico()">Agregar dato</button>
+                                </div>
+
+                                <div class="cancel-actions" style="margin-top:10px;">
+                                    <button class="btn-ghost" (click)="cancelarEdicionHistoria()">Cancelar</button>
+                                    <button class="btn-danger" [disabled]="!validarHistoriaDraft()"
+                                        (click)="guardarHistoria(p)">Guardar historia</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

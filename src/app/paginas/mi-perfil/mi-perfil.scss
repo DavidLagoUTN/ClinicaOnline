@@ -378,3 +378,89 @@
     white-space: normal;
   }
 }
+
+/* Contenedor general de la historia clínica */
+.historia-contenedor {
+  margin-top: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 78, 167, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(3, 16, 40, 0.04);
+}
+
+/* Cada bloque/entrada separada */
+.historia-separada {
+  padding: 10px 10px 10px 10px;
+  max-height: 800px;
+  margin-top: 8px;
+  background: rgba(16, 79, 167, 0.08);
+  border: 1px solid rgba(16, 79, 167, 0.293);
+}
+.historia-separada:last-child {
+  border-bottom: none;
+}
+
+/* Cabecera pequeña */
+.historia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.historia-title {
+  color: #083049;
+  font-weight: 800;
+  font-size: 14px;
+}
+.historia-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Grid compacto para los datos estáticos */
+.historia-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.historia-item {
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+}
+.label.muted {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.value {
+  font-weight: 700;
+  color: #0b3b5a;
+}
+
+/* Dinámicos */
+.historia-dinamicos {
+  margin-top: 8px;
+}
+.cancel-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.cancel-text {
+  font-size: 13px;
+  color: #0b3b5a;
+  margin-bottom: 4px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .historia-grid {
+    flex-direction: column;
+  }
+  .historia-item {
+    min-width: 100%;
+  }
+}

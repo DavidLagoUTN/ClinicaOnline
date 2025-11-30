@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
 import { Firestore, doc, docData, collection, query, where, collectionData, updateDoc } from '@angular/fire/firestore';
 import { Navbar } from '../../componentes/navbar/navbar';
+import { ResaltarPipe } from '../../pipes/resaltar.pipe';
 
 export type Turno = {
   id: string;
@@ -26,6 +27,7 @@ export type Turno = {
   avatar?: string; // usado por el HTML para mostrar la imagen
   id_paciente?: string;
   id_especialista?: string;
+  historia?: any;
   [k: string]: any;
   encuesta?: {
     pregunta1?: 'si' | 'no' | null;
@@ -39,7 +41,7 @@ export type Turno = {
 @Component({
   selector: 'app-mis-turnos',
   standalone: true,
-  imports: [CommonModule, FormsModule, Navbar],
+  imports: [CommonModule, FormsModule, Navbar, ResaltarPipe],
   templateUrl: './mis-turnos.html',
   styleUrls: ['./mis-turnos.scss']
 })
@@ -70,6 +72,19 @@ export class MisTurnos implements OnInit {
   // Toggle para panel de calificación/encuesta
   expandedCalificacionId: string | null = null;
 
+  maxOptionalDinamicos = 3;
+
+  // Estructura del draft por turno (añadir opcionales)
+  historiaDraftMap: {
+    [turnoId: string]: {
+      altura?: number | null;
+      peso?: number | null;
+      temperatura?: string | null;
+      presion?: string | null;
+      dinamicos: { clave: string; valor: any }[];
+      opcionales: { clave: string; valor: any }[];
+    };
+  } = {};
 
 
   viewMode: 'paciente' | 'especialista' = 'paciente';
@@ -98,6 +113,8 @@ export class MisTurnos implements OnInit {
     this.loading = true;
     this.error = null;
 
+    const historiaCache = (this as any).historiaCache ?? ((this as any).historiaCache = {});
+
     try {
       const user = this.auth.currentUser;
       if (!user) {
@@ -108,7 +125,6 @@ export class MisTurnos implements OnInit {
       }
       const uid = user.uid;
 
-      // Perfil del usuario actual (colección correcta: 'usuarios')
       const perfilRef = doc(this.firestore, `usuarios/${uid}`);
       const perfilSnap: any = await firstValueFrom(docData(perfilRef, { idField: 'id' }));
 
@@ -123,38 +139,65 @@ export class MisTurnos implements OnInit {
           try {
             const tRef = doc(this.firestore, `turnos/${id}`);
             const raw: any = await firstValueFrom(docData(tRef, { idField: 'id' }));
-            console.log('Turno RAW desde Firebase:', raw);
             if (!raw) return null;
 
             let turno = this.normalizeTurno({ id, ...raw });
-            console.log('Turno normalizado:', turno);
 
+            // enriquecer con datos del otro usuario
             if (this.viewMode === 'paciente' && turno.id_especialista) {
-              const especialistaRef = doc(this.firestore, `usuarios/${turno.id_especialista}`);
-              const especialistaSnap: any = await firstValueFrom(docData(especialistaRef, { idField: 'id' }));
-              console.log('Datos del especialista:', especialistaSnap);
-              turno.usuarios_especialista = {
-                nombre: especialistaSnap?.nombre || '',
-                apellido: especialistaSnap?.apellido || '',
-                id: especialistaSnap?.uid,
-                avatar: especialistaSnap?.imagenPerfil || this.defaultAvatar
-              };
-              turno.avatar = turno.usuarios_especialista.avatar;
+              try {
+                const especialistaRef = doc(this.firestore, `usuarios/${turno.id_especialista}`);
+                const especialistaSnap: any = await firstValueFrom(docData(especialistaRef, { idField: 'id' }));
+                turno.usuarios_especialista = {
+                  nombre: especialistaSnap?.nombre || '',
+                  apellido: especialistaSnap?.apellido || '',
+                  id: especialistaSnap?.uid,
+                  avatar: especialistaSnap?.imagenPerfil || this.defaultAvatar
+                };
+                turno.avatar = turno.usuarios_especialista.avatar;
+              } catch (err) {
+                console.warn('Error leyendo especialista para turno', id, err);
+              }
             }
 
             if (this.viewMode === 'especialista' && turno.id_paciente) {
-              const pacienteRef = doc(this.firestore, `usuarios/${turno.id_paciente}`);
-              const pacienteSnap: any = await firstValueFrom(docData(pacienteRef, { idField: 'id' }));
-              console.log('Datos del paciente:', pacienteSnap);
-              turno.usuarios_paciente = {
-                nombre: pacienteSnap?.nombre || '',
-                apellido: pacienteSnap?.apellido || '',
-                id: pacienteSnap?.uid,
-                avatar: pacienteSnap?.imagenPerfil || this.defaultAvatar
-              };
-              turno.avatar = turno.usuarios_paciente.avatar;
+              try {
+                const pacienteRef = doc(this.firestore, `usuarios/${turno.id_paciente}`);
+                const pacienteSnap: any = await firstValueFrom(docData(pacienteRef, { idField: 'id' }));
+                turno.usuarios_paciente = {
+                  nombre: pacienteSnap?.nombre || '',
+                  apellido: pacienteSnap?.apellido || '',
+                  id: pacienteSnap?.uid,
+                  avatar: pacienteSnap?.imagenPerfil || this.defaultAvatar
+                };
+                turno.avatar = turno.usuarios_paciente.avatar;
+              } catch (err) {
+                console.warn('Error leyendo paciente para turno', id, err);
+              }
             }
 
+            // Adjuntar historia clínica (si existe) — siempre normalizar y cachear
+            const pacienteUid = turno.id_paciente ?? turno.usuarios_paciente?.id;
+            if (pacienteUid) {
+              if (historiaCache[pacienteUid] !== undefined) {
+                turno.historia = historiaCache[pacienteUid];
+              } else {
+                try {
+                  const rawHistoria = await this.fetchHistoriaPaciente(pacienteUid);
+                  const historiaNorm = this.normalizeHistoria(rawHistoria);
+                  historiaCache[pacienteUid] = historiaNorm;
+                  turno.historia = historiaNorm;
+                } catch (err) {
+                  console.warn('Error cargando historia para paciente', pacienteUid, err);
+                  historiaCache[pacienteUid] = null;
+                  turno.historia = null;
+                }
+              }
+            } else {
+              turno.historia = null;
+            }
+
+            console.log('Historia asignada para paciente', pacienteUid, turno.historia);
             return turno;
           } catch (err) {
             console.warn('Error leyendo turno', id, err);
@@ -164,9 +207,8 @@ export class MisTurnos implements OnInit {
 
         const results = await Promise.all(reads);
         lista = (results.filter(Boolean) as Turno[]).sort((a, b) => this.compareFecha(a, b));
-        console.log('Turnos finales listos para renderizar:', lista);
       } else {
-        // Fallback: consulta por id del usuario
+        // fallback: consulta por id del usuario
         const col = collection(this.firestore, 'turnos');
         const q =
           this.viewMode === 'especialista'
@@ -175,34 +217,67 @@ export class MisTurnos implements OnInit {
 
         const rawList: any[] = await firstValueFrom(collectionData(q, { idField: 'id' }));
         const enriched: Turno[] = [];
+
         for (const raw of rawList || []) {
-          let turno = this.normalizeTurno(raw);
+          try {
+            let turno = this.normalizeTurno(raw);
 
-          if (this.viewMode === 'paciente' && turno.id_especialista) {
-            const especialistaRef = doc(this.firestore, `usuarios/${turno.id_especialista}`);
-            const especialistaSnap: any = await firstValueFrom(docData(especialistaRef, { idField: 'id' }));
-            turno.usuarios_especialista = {
-              nombre: especialistaSnap?.nombre || '',
-              apellido: especialistaSnap?.apellido || '',
-              id: especialistaSnap?.uid,
-              avatar: especialistaSnap?.imagenPerfil || this.defaultAvatar
-            };
-            turno.avatar = turno.usuarios_especialista.avatar;
+            if (this.viewMode === 'paciente' && turno.id_especialista) {
+              try {
+                const especialistaRef = doc(this.firestore, `usuarios/${turno.id_especialista}`);
+                const especialistaSnap: any = await firstValueFrom(docData(especialistaRef, { idField: 'id' }));
+                turno.usuarios_especialista = {
+                  nombre: especialistaSnap?.nombre || '',
+                  apellido: especialistaSnap?.apellido || '',
+                  id: especialistaSnap?.uid,
+                  avatar: especialistaSnap?.imagenPerfil || this.defaultAvatar
+                };
+                turno.avatar = turno.usuarios_especialista.avatar;
+              } catch (err) {
+                console.warn('Error leyendo especialista en fallback', err);
+              }
+            }
+
+            if (this.viewMode === 'especialista' && turno.id_paciente) {
+              try {
+                const pacienteRef = doc(this.firestore, `usuarios/${turno.id_paciente}`);
+                const pacienteSnap: any = await firstValueFrom(docData(pacienteRef, { idField: 'id' }));
+                turno.usuarios_paciente = {
+                  nombre: pacienteSnap?.nombre || '',
+                  apellido: pacienteSnap?.apellido || '',
+                  id: pacienteSnap?.uid,
+                  avatar: pacienteSnap?.imagenPerfil || this.defaultAvatar
+                };
+                turno.avatar = turno.usuarios_paciente.avatar;
+              } catch (err) {
+                console.warn('Error leyendo paciente en fallback', err);
+              }
+            }
+
+            const pacienteUid = turno.id_paciente ?? turno.usuarios_paciente?.id;
+            if (pacienteUid) {
+              if (historiaCache[pacienteUid] !== undefined) {
+                turno.historia = historiaCache[pacienteUid];
+              } else {
+                try {
+                  const rawHistoria = await this.fetchHistoriaPaciente(pacienteUid);
+                  const historiaNorm = this.normalizeHistoria(rawHistoria);
+                  historiaCache[pacienteUid] = historiaNorm;
+                  turno.historia = historiaNorm;
+                } catch (err) {
+                  console.warn('Error cargando historia en fallback para paciente', pacienteUid, err);
+                  historiaCache[pacienteUid] = null;
+                  turno.historia = null;
+                }
+              }
+            } else {
+              turno.historia = null;
+            }
+
+            enriched.push(turno);
+          } catch (err) {
+            console.warn('Error procesando raw turno', err);
           }
-
-          if (this.viewMode === 'especialista' && turno.id_paciente) {
-            const pacienteRef = doc(this.firestore, `usuarios/${turno.id_paciente}`);
-            const pacienteSnap: any = await firstValueFrom(docData(pacienteRef, { idField: 'id' }));
-            turno.usuarios_paciente = {
-              nombre: pacienteSnap?.nombre || '',
-              apellido: pacienteSnap?.apellido || '',
-              id: pacienteSnap?.uid,
-              avatar: pacienteSnap?.imagenPerfil || this.defaultAvatar
-            };
-            turno.avatar = turno.usuarios_paciente.avatar;
-          }
-
-          enriched.push(turno);
         }
 
         lista = enriched.sort((a, b) => this.compareFecha(a, b));
@@ -223,46 +298,39 @@ export class MisTurnos implements OnInit {
     }
   }
 
-
   filtrarTurnosComoPaciente(valor: string) {
     const texto = (valor || '').toLowerCase().trim();
+
     if (!texto) {
       this.turnosFiltrados = [...this.turnosOriginales];
       this.syncFiltered();
       return;
     }
 
+    console.log('Buscando texto:', texto);
+    this.turnosOriginales.forEach(t => {
+      const matched = this.matchesTurno(t, texto);
+      if (matched) {
+        console.log('Coincidencia en turno', t.id, 'paciente', t.usuarios_paciente?.nombre, t.usuarios_paciente?.apellido, 'historia:', (t as any).historia);
+      }
+    });
+
     this.turnosFiltrados = this.turnosOriginales.filter(t => {
-      const especialidad = (t.especialidad || '').toLowerCase();
-      const especialista = (
-        (t.usuarios_especialista?.nombre || '') + ' ' + (t.usuarios_especialista?.apellido || '')
-      ).toLowerCase();
-      const fecha = String(t.fechaHora || t.fecha || '').toLowerCase();
-      return especialidad.includes(texto) || especialista.includes(texto) || fecha.includes(texto);
+      try {
+        return this.matchesTurno(t, texto);
+      } catch (err) {
+        console.warn('Error evaluando matchesTurno', err);
+        return false;
+      }
     });
 
     this.syncFiltered();
   }
 
   filtrarTurnosComoEspecialista(valor: string) {
-    const texto = (valor || '').toLowerCase().trim();
-    if (!texto) {
-      this.turnosFiltrados = [...this.turnosOriginales];
-      this.syncFiltered();
-      return;
-    }
-
-    this.turnosFiltrados = this.turnosOriginales.filter(t => {
-      const especialidad = (t.especialidad || '').toLowerCase();
-      const paciente = (
-        (t.usuarios_paciente?.nombre || '') + ' ' + (t.usuarios_paciente?.apellido || '')
-      ).toLowerCase();
-      const fecha = String(t.fechaHora || t.fecha || '').toLowerCase();
-      return especialidad.includes(texto) || paciente.includes(texto) || fecha.includes(texto);
-    });
-
-    this.syncFiltered();
+    this.filtrarTurnosComoPaciente(valor);
   }
+
 
   obtenerValorInput(event: Event): string {
     return (event.target as HTMLInputElement).value || '';
@@ -458,14 +526,108 @@ export class MisTurnos implements OnInit {
   }
 
   startFinalizarTurno(turno: Turno) {
-    // cerrar otros formularios abiertos
     this.cancelingTurnoId = null;
     this.rejectingTurnoId = null;
 
     this.finalizingTurnoId = turno.id;
     this.finalReseniaMap[turno.id] = turno.resenia ?? '';
     this.finalDiagnosticoMap[turno.id] = turno.diagnostico ?? '';
+
+    const existing = (turno as any).historia ?? null;
+    const dinamicosFromExisting = Array.isArray(existing?.dinamicos) ? existing.dinamicos : [];
+
+    const dinamicos: { clave: string; valor: any }[] = [
+      dinamicosFromExisting[0] ? { clave: dinamicosFromExisting[0].clave || '', valor: this.normalizeRangeValue(dinamicosFromExisting[0].valor) } : { clave: '', valor: 0 },
+      dinamicosFromExisting[1] ? { clave: dinamicosFromExisting[1].clave || '', valor: Number(dinamicosFromExisting[1].valor) || null } : { clave: '', valor: null },
+      dinamicosFromExisting[2] ? { clave: dinamicosFromExisting[2].clave || '', valor: Boolean(dinamicosFromExisting[2].valor) } : { clave: '', valor: false }
+    ];
+
+    const opcionalesFromExisting = Array.isArray(dinamicosFromExisting) && dinamicosFromExisting.length > 3
+      ? dinamicosFromExisting.slice(3).map((d: any) => ({ clave: d.clave ?? '', valor: d.valor ?? '' }))
+      : [];
+
+    this.historiaDraftMap[turno.id] = {
+      altura: existing?.altura ?? null,
+      peso: existing?.peso ?? null,
+      temperatura: existing?.temperatura ?? null,
+      presion: existing?.presion ?? null,
+      dinamicos,
+      opcionales: opcionalesFromExisting
+    };
+
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
   }
+
+
+  // Opcionales: agregar / eliminar
+  addOptionalDinamico(turnoId: string) {
+    if (!this.historiaDraftMap[turnoId]) {
+      this.historiaDraftMap[turnoId] = {
+        altura: null,
+        peso: null,
+        temperatura: null,
+        presion: null,
+        dinamicos: [
+          { clave: '', valor: 0 },
+          { clave: '', valor: null },
+          { clave: '', valor: false }
+        ],
+        opcionales: []
+      };
+    }
+    const list = this.historiaDraftMap[turnoId].opcionales || [];
+    if (list.length >= this.maxOptionalDinamicos) return;
+    list.push({ clave: '', valor: '' });
+    this.historiaDraftMap[turnoId].opcionales = list;
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+
+  removeOptionalDinamico(turnoId: string, index: number) {
+    const list = this.historiaDraftMap[turnoId]?.opcionales;
+    if (!list) return;
+    list.splice(index, 1);
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+  normalizeRangeValue(v: any): number {
+    const n = Number(v);
+    if (Number.isNaN(n)) return 0;
+    if (n < 0) return 0;
+    if (n > 100) return 100;
+    return Math.round(n);
+  }
+
+  // Evento cuando se mueve el range: actualiza el valor numérico ligado
+  onRangeChange(turnoId: string, index: number) {
+    const draft = this.historiaDraftMap[turnoId];
+    if (!draft) return;
+    // Angular ya actualiza el valor por ngModel; forzamos detección si hace falta
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+  // Cuando se edita el número al lado del range, sincronizar con el range y limitar 0-100
+  onRangeNumberInput(event: Event, turnoId: string, index: number) {
+    const input = event.target as HTMLInputElement;
+    let val = Number(input.value);
+    if (Number.isNaN(val)) val = 0;
+    if (val < 0) val = 0;
+    if (val > 100) val = 100;
+    if (!this.historiaDraftMap[turnoId]) return;
+    this.historiaDraftMap[turnoId].dinamicos[index].valor = Math.round(val);
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+  // Evitar caracteres no numéricos en el segundo control (solo números)
+  onlyNumberKey(event: KeyboardEvent) {
+    const allowed = ['Backspace', 'ArrowLeft', 'ArrowRight', 'Tab', 'Delete'];
+    if (allowed.includes(event.key)) return;
+    const isNumber = /^[0-9]$/.test(event.key);
+    if (!isNumber) event.preventDefault();
+  }
+
+
+
 
   // cancelar el flujo (oculta form sin guardar)
   abortCancelarTurno() {
@@ -537,30 +699,6 @@ export class MisTurnos implements OnInit {
     } catch (err) {
       console.error('confirmRechazarTurno error', err);
       this.error = 'No se pudo rechazar el turno';
-    }
-  }
-
-  async confirmFinalizarTurno(turno: Turno) {
-    const resenia = (this.finalReseniaMap[turno.id] || '').trim();
-    const diagnostico = (this.finalDiagnosticoMap[turno.id] || '').trim();
-    if (!resenia || !diagnostico) return;
-
-    try {
-      const ref = doc(this.firestore, `turnos/${turno.id}`);
-      await updateDoc(ref, {
-        estado: 'atendido',
-        resenia,
-        diagnostico
-      });
-
-      // cerrar form
-      this.finalizingTurnoId = null;
-
-      // refrescar
-      await this.cargarTurnos();
-    } catch (err) {
-      console.error('confirmFinalizarTurno error', err);
-      this.error = 'No se pudo finalizar el turno';
     }
   }
 
@@ -690,17 +828,285 @@ export class MisTurnos implements OnInit {
   }
 
   limpiarFiltro(input: HTMLInputElement) {
-  // limpiar el input visual
-  input.value = '';
+    // limpiar el input visual
+    input.value = '';
 
-  // re-ejecutar el filtrado vacío según el modo actual
-  if (this.viewMode === 'paciente') {
-    this.filtrarTurnosComoPaciente('');
-  } else {
-    this.filtrarTurnosComoEspecialista('');
+    // re-ejecutar el filtrado vacío según el modo actual
+    if (this.viewMode === 'paciente') {
+      this.filtrarTurnosComoPaciente('');
+    } else {
+      this.filtrarTurnosComoEspecialista('');
+    }
   }
-}
 
 
+  private async fetchHistoriaPaciente(pacienteUid: string): Promise<any | null> {
+    if (!pacienteUid) return null;
+
+    try {
+      // 1) doc 'historias/{uid}'
+      try {
+        const hRef = doc(this.firestore, `historias/${pacienteUid}`);
+        const hSnap: any = await firstValueFrom(docData(hRef, { idField: 'id' }));
+        if (hSnap && Object.keys(hSnap).length) {
+          if (Array.isArray(hSnap)) {
+            return hSnap;
+          }
+          return {
+            ...hSnap,
+            dinamicos: Array.isArray(hSnap.dinamicos) ? hSnap.dinamicos : []
+          };
+        }
+      } catch (e) {
+        // continuar con siguiente intento
+      }
+
+      // 2) subcolección 'usuarios/{uid}/historia'
+      try {
+        const colRef = collection(this.firestore, `usuarios/${pacienteUid}/historia`);
+        const list: any[] = await firstValueFrom(collectionData(colRef, { idField: 'id' }));
+        if (Array.isArray(list) && list.length) {
+          return list.map((h: any) => ({
+            ...h,
+            dinamicos: Array.isArray(h.dinamicos) ? h.dinamicos : []
+          }));
+        }
+      } catch (e) {
+        // continuar
+      }
+
+      // 3) campo dentro del documento de usuario: usuarios/{uid}.historia*
+      try {
+        const uRef = doc(this.firestore, `usuarios/${pacienteUid}`);
+        const uSnap: any = await firstValueFrom(docData(uRef, { idField: 'id' }));
+        if (uSnap) {
+          const h = uSnap.historia || uSnap.historiaClinica || uSnap.historia_clinica;
+          if (h) {
+            if (Array.isArray(h)) {
+              return h.map((x: any) => ({ ...x, dinamicos: Array.isArray(x.dinamicos) ? x.dinamicos : [] }));
+            } else if (typeof h === 'object') {
+              return { ...h, dinamicos: Array.isArray(h.dinamicos) ? h.dinamicos : [] };
+            }
+          }
+        }
+      } catch (e) {
+        // continuar
+      }
+
+      // no encontrada
+      return null;
+    } catch (err) {
+      console.warn('fetchHistoriaPaciente error', err);
+      return null;
+    }
+  }
+
+  private matchesTurno(turno: Turno, texto: string): boolean {
+    if (!texto) return true;
+    const q = texto.toLowerCase().trim();
+    if (!q) return true;
+
+    const inspect = (val: any): boolean => {
+      if (val === null || val === undefined) return false;
+
+      if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+        return String(val).toLowerCase().includes(q);
+      }
+
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (inspect(item)) return true;
+        }
+        return false;
+      }
+
+      if (typeof val === 'object') {
+        // dato dinámico normalizado {clave, valor}
+        if ('clave' in val && 'valor' in val) {
+          if (String(val.clave || '').toLowerCase().includes(q)) return true;
+          if (String(val.valor || '').toLowerCase().includes(q)) return true;
+        }
+
+        // revisar propiedades relevantes primero
+        const priorityKeys = ['nombre', 'apellido', 'dni', 'email', 'especialidad', 'fecha', 'hora'];
+        for (const k of priorityKeys) {
+          if (k in val && inspect(val[k])) return true;
+        }
+
+        // inspección general recursiva
+        for (const k of Object.keys(val)) {
+          try {
+            if (inspect(val[k])) return true;
+          } catch (e) {
+            // ignorar propiedades problemáticas
+          }
+        }
+        return false;
+      }
+
+      return false;
+    };
+
+    // campos principales del turno
+    if (inspect(turno.especialidad)) return true;
+    if (inspect(turno.fecha)) return true;
+    if (inspect(turno.hora)) return true;
+    if (inspect(turno.estado)) return true;
+    if (inspect(turno.comentario)) return true;
+
+    // datos del paciente / especialista
+    if (turno.usuarios_paciente && inspect(turno.usuarios_paciente)) return true;
+    if (turno.usuarios_especialista && inspect(turno.usuarios_especialista)) return true;
+
+    // historia clínica (puede ser array u objeto)
+    const h = (turno as any).historia;
+    if (h && inspect(h)) return true;
+
+    // fallback: cualquier otro campo del turno
+    if (inspect(turno)) return true;
+
+    return false;
+  }
+
+
+
+
+  private normalizeHistoria(raw: any): any {
+    if (!raw) return null;
+
+    const normalizeDato = (d: any) => {
+      const clave = String(d?.clave ?? d?.key ?? d?.nombre ?? d?.name ?? '').trim();
+      const valorRaw = d?.valor ?? d?.value ?? d?.valorTexto ?? d?.text ?? d;
+      const valor = valorRaw === undefined || valorRaw === null ? '' : String(valorRaw).trim();
+      return { clave, valor };
+    };
+
+    if (Array.isArray(raw)) {
+      return raw.map((entry: any) => ({
+        ...entry,
+        dinamicos: Array.isArray(entry.dinamicos) ? entry.dinamicos.map((d: any) => normalizeDato(d)) : []
+      }));
+    }
+
+    if (typeof raw === 'object') {
+      const obj: any = { ...raw };
+      obj.dinamicos = Array.isArray(raw.dinamicos) ? raw.dinamicos.map((d: any) => normalizeDato(d)) : [];
+      return obj;
+    }
+
+    return null;
+  }
+
+  // Helpers para dinamicos (por turno)
+  addDinamico(turnoId: string) {
+    if (!this.historiaDraftMap[turnoId]) {
+      this.historiaDraftMap[turnoId] = {
+        altura: null,
+        peso: null,
+        temperatura: null,
+        presion: null,
+        dinamicos: [],
+        opcionales: []
+      };
+
+    }
+    const draft = this.historiaDraftMap[turnoId];
+    if (draft.dinamicos.length >= 3) return;
+    draft.dinamicos.push({ clave: '', valor: '' });
+    // forzar detección si hace falta
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+  removeDinamico(turnoId: string, index: number) {
+    const draft = this.historiaDraftMap[turnoId];
+    if (!draft) return;
+    draft.dinamicos.splice(index, 1);
+    try { this.cd.detectChanges(); } catch (e) { /* noop */ }
+  }
+
+  // Validación del draft para el turno (al menos un campo fijo no nulo y dinamicos válidos)
+  validarHistoriaDraft(turnoId: string): boolean {
+    const draft = this.historiaDraftMap[turnoId];
+    if (!draft) return false;
+
+    // al menos un campo fijo no nulo (mantener regla previa)
+    const anyFixed =
+      (draft.altura !== null && draft.altura !== undefined && draft.altura !== undefined) ||
+      (draft.peso !== null && draft.peso !== undefined && draft.peso !== undefined) ||
+      ((draft.temperatura || '').toString().trim() !== '') ||
+      ((draft.presion || '').toString().trim() !== '');
+    if (!anyFixed) return false;
+
+    if (!Array.isArray(draft.dinamicos) || draft.dinamicos.length < 3) return false;
+
+    // 1) rango 0..100
+    const d0 = draft.dinamicos[0];
+    if (!d0 || (d0.clave || '').toString().trim() === '') return false;
+    const v0 = Number(d0.valor);
+    if (Number.isNaN(v0) || v0 < 0 || v0 > 100) return false;
+
+    // 2) número
+    const d1 = draft.dinamicos[1];
+    if (!d1 || (d1.clave || '').toString().trim() === '') return false;
+    const v1 = Number(d1.valor);
+    if (Number.isNaN(v1)) return false;
+
+    // 3) booleano
+    const d2 = draft.dinamicos[2];
+    if (!d2 || (d2.clave || '').toString().trim() === '') return false;
+    if (typeof d2.valor !== 'boolean') return false;
+
+    return true;
+  }
+
+  // Modificar confirmFinalizarTurno para incluir la historia clínica en el update del turno
+  async confirmFinalizarTurno(turno: Turno) {
+    const resenia = (this.finalReseniaMap[turno.id] || '').trim();
+    const diagnostico = (this.finalDiagnosticoMap[turno.id] || '').trim();
+    if (!resenia || !diagnostico) return;
+
+    const draft = this.historiaDraftMap[turno.id];
+    if (!draft || !this.validarHistoriaDraft(turno.id)) {
+      this.error = 'Completá la historia clínica del turno antes de finalizar.';
+      return;
+    }
+
+    try {
+      const ref = doc(this.firestore, `turnos/${turno.id}`);
+      const historiaPayload: any = {
+        altura: draft.altura ?? null,
+        peso: draft.peso ?? null,
+        temperatura: draft.temperatura ?? null,
+        presion: draft.presion ?? null,
+        dinamicos: [
+          { clave: draft.dinamicos[0].clave, valor: Number(draft.dinamicos[0].valor) },
+          { clave: draft.dinamicos[1].clave, valor: Number(draft.dinamicos[1].valor) },
+          { clave: draft.dinamicos[2].clave, valor: Boolean(draft.dinamicos[2].valor) }
+        ],
+        opcionales: (draft.opcionales || []).map(o => ({ clave: o.clave, valor: o.valor })),
+        actualizadoEn: new Date().toISOString()
+      };
+
+
+
+
+      await updateDoc(ref, {
+        estado: 'atendido',
+        resenia,
+        diagnostico,
+        historia: historiaPayload
+      });
+
+      this.finalizingTurnoId = null;
+      delete this.historiaDraftMap[turno.id];
+      delete this.finalReseniaMap[turno.id];
+      delete this.finalDiagnosticoMap[turno.id];
+
+      await this.cargarTurnos();
+    } catch (err) {
+      console.error('confirmFinalizarTurno error', err);
+      this.error = 'No se pudo finalizar el turno';
+    }
+  }
 
 }

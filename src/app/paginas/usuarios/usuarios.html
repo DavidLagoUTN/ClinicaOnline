@@ -1,47 +1,138 @@
 <app-navbar></app-navbar>
+
 <ng-container *ngIf="!mostrarRegistro">
   <h1 class="titulo">Usuarios del sistema</h1>
+
   <div class="app-container">
 
     <div class="overlay" *ngIf="loading">
       <app-loading></app-loading>
     </div>
 
-    <table *ngIf="!loading" class="usuarios-table">
-      <thead>
-        <tr>
-          <th>Imagen</th>
-          <th>Nombre</th>
-          <th>Apellido</th>
-          <th>Edad</th>
-          <th>DNI</th>
-          <th>Correo electrónico</th>
-          <th>Tipo</th>
-          <th>Acceso</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let u of usuarios">
-          <td>
-            <img [src]="u.imagenPerfil || u.imagenPerfilExtra || '/assets/default-avatar.png'" alt="Foto"
-              class="mini-avatar" />
-          </td>
-          <td>{{ u.nombre }}</td>
-          <td>{{ u.apellido }}</td>
-          <td>{{ u.edad }}</td>
-          <td>{{ u.dni }}</td>
-          <td>{{ u.mail }}</td>
-          <td>{{ u.tipo === 'admin' ? 'administrador' : u.tipo }}</td>
-          <td>
-            <button *ngIf="u.tipo === 'especialista'" (click)="toggleAprobacion(u)"
-              [ngClass]="u.aprobadoPorAdmin ? 'btn-inhabilitar' : 'btn-habilitar'">
-              {{ u.aprobadoPorAdmin ? 'Inhabilitar' : 'Habilitar' }}
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Botón exportar -->
+    <div style="display:flex; justify-content:center; margin-bottom:8px;">
+      <button class="btn-export-usuarios" (click)="exportarUsuariosExcel()"
+        [disabled]="loading || usuarios.length === 0">
+        Exportar datos de usuarios a Excel
+      </button>
+    </div>
+
+    <!-- Lista de cards en lugar de tabla -->
+    <div class="turnos-list usuarios-cards" *ngIf="!loading">
+      <div *ngFor="let u of usuarios; trackBy: trackByUid" class="turno-card paciente-card usuario-card"
+        [appFondoPorRol]="u.tipo === 'admin' ? 'administrador' : u.tipo" [destacado]="u.destacado">
+        <div class="turno-left">
+          <div class="avatar-mini">
+            <img [src]="u.imagenPerfil || u.imagenPerfilExtra || '/assets/default-avatar.png'"
+              [alt]="u.nombre || 'Avatar'" />
+          </div>
+        </div>
+
+        <div class="turno-body">
+          <div class="fila-1">
+            <div class="persona">
+              <strong>{{ u.nombre || '—' }} {{ u.apellido || '' }}</strong>
+            </div>
+
+            <div class="nota">
+              <div>{{ u.tipo === 'admin' ? 'administrador' : u.tipo }}</div>
+            </div>
+          </div>
+
+          <!-- Datos principales (apilados, legibles) -->
+          <div class="fila-2 datos-turno">
+            <div class="dato-row">
+              <div class="dato"><span class="muted">Edad:</span> <strong>{{ u.edad ?? '—' }}</strong></div>
+            </div>
+
+            <div class="dato-row">
+              <div class="dato"><span class="muted">DNI:</span> <strong>{{ u.dni || '—' }}</strong></div>
+            </div>
+
+            <div class="dato-row">
+              <div class="dato"><span class="muted">Correo:</span> <strong>{{ u.mail || '—' }}</strong></div>
+            </div>
+          </div>
+
+          <!-- Acciones / estado de acceso -->
+          <div class="fila-2 datos-turno" style="margin-top:8px;">
+            <div class="dato" style="width:100%;">
+              <div class="muted" *ngIf="u.tipo === 'especialista'" style="font-weight:600; margin-bottom:6px;">Acceso
+              </div>
+
+              <div class="access-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div *ngIf="u.tipo === 'especialista'">
+                  <button (click)="toggleAprobacion(u)"
+                    [ngClass]="u.aprobadoPorAdmin ? 'btn-inhabilitar' : 'btn-habilitar'">
+                    {{ u.aprobadoPorAdmin ? 'Inhabilitar' : 'Habilitar' }}
+                  </button>
+                </div>
+
+                <!-- Botones para pacientes -->
+                <div *ngIf="u.tipo === 'paciente'">
+                  <button class="btn-export-turnos" (click)="exportarTurnosPaciente(u)">
+                    Exportar datos de turnos
+                  </button>
+
+                  <button class="btn-ver-historia" (click)="toggleHistoria(u)">
+                    {{ showHistoriaMap[u.uid] ? 'Ocultar historia clínica' : 'Ver historia clínica' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel inline de historia clínica (fuera del bloque de botones para evitar problemas de render) -->
+          <div *ngIf="u.tipo === 'paciente' && showHistoriaMap[u.uid]" class="historia-panel"
+            style="margin-top:8px; padding:8px; border:1px solid #eee;">
+            <div *ngIf="historiaLoadingMap[u.uid]" class="muted">Cargando historia clínica...</div>
+
+            <div *ngIf="!historiaLoadingMap[u.uid] && (!historiaDataMap[u.uid] || historiaDataMap[u.uid].length === 0)"
+              class="muted">
+              No hay registros en la historia clínica.
+            </div>
+
+            <ng-container *ngIf="historiaDataMap[u.uid] && historiaDataMap[u.uid].length > 0">
+              <div *ngFor="let h of historiaDataMap[u.uid]" style="margin-bottom:12px;">
+
+                <!-- Campos estáticos -->
+                <div class="fila-2 datos-turno" style="margin-top:6px;">
+                  <strong>Historia Clínica</strong>
+                  <div class="dato-row">
+                    <div class="dato"><span class="muted">Peso:</span> <strong>{{ h.peso ?? '—' }} kg</strong></div>
+                  </div>
+                  <div class="dato-row">
+                    <div class="dato"><span class="muted">Altura:</span> <strong>{{ h.altura ?? '—' }} cm</strong></div>
+                  </div>
+                  <div class="dato-row">
+                    <div class="dato"><span class="muted">Temperatura:</span> <strong>{{ h.temperatura ?? '—' }}
+                        °C</strong></div>
+                  </div>
+                  <div class="dato-row">
+                    <div class="dato"><span class="muted">Presión:</span> <strong>{{ h.presion ?? '—' }} mmHg</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Datos dinámicos -->
+                <div *ngIf="(h.dinamicos || []).length > 0" style="margin-top:8px;">
+                  <div class="cancel-label muted">Datos adicionales</div>
+                  <div *ngFor="let d of h.dinamicos">
+                    <div class="cancel-text"><strong>{{ d.clave }}:</strong> {{ d.valor }}</div>
+                  </div>
+                </div>
+
+              </div>
+            </ng-container>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
   </div>
+
   <button class="btn-generar" (click)="generarNuevoUsuario()">Generar nuevo usuario</button>
 </ng-container>
 

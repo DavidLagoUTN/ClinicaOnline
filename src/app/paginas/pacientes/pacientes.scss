@@ -1,0 +1,245 @@
+:host {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+/* Contenedor */
+.app-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+/* Tarjeta principal (reutiliza look & feel de mis-turnos) */
+.tarjeta-mis-turnos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 980px;
+  padding: 1rem;
+  border: 3px solid #104ea7;
+  border-radius: 8px;
+  background-color: hsla(197, 54%, 55%, 0.85);
+  box-sizing: border-box;
+}
+
+/* Lista de cards */
+.turnos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Card paciente (basada en turno-card) */
+.paciente-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: rgba(240, 248, 255, 0.95);
+  border: 2px solid rgba(16, 78, 167, 0.12);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Avatar */
+.avatar-mini {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 2px solid #104ea7;
+}
+
+.avatar-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Body */
+.turno-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Header fila */
+.fila-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.persona {
+  font-weight: 900;
+  color: #06314f;
+}
+
+/* Datos generales y layout de campos */
+.datos-turno {
+  width: 100%;
+}
+
+.dato {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 14px;
+  color: #083049;
+  align-items: center;
+}
+
+/* Panel expandible (reseña / historia) */
+.resena-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease, padding 180ms ease;
+  padding: 0;
+  margin-top: 0;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.resena-panel.open {
+  padding: 10px;
+  max-height: 800px;
+  margin-top: 8px;
+  background: rgba(16, 78, 167, 0.03);
+  border: 1px solid rgba(16, 78, 167, 0.06);
+}
+
+.cancel-label {
+  font-weight: 700;
+  color: #06314f;
+}
+
+.cancel-text {
+  color: #083049;
+  white-space: pre-wrap;
+}
+
+/* Buttons */
+button {
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.45rem 0.7rem;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #06314f;
+  border: 2px solid rgba(16,78,167,0.12);
+}
+
+.btn-danger {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+}
+
+/* Form controls */
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(16,78,167,0.12);
+  box-sizing: border-box;
+}
+
+/* Small utility */
+.ultima-list {
+  margin-top: 6px;
+  color: #083049;
+}
+
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: #06314f;
+  font-weight: 700;
+}
+
+/* Lista inline: cada turno en una sola línea (últimos turnos) */
+.ultima-list-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 0;
+}
+
+/* Cada turno: fila única, no wrap */
+.ultimo-turno-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  white-space: nowrap;        /* evita salto de línea */
+  overflow: hidden;
+  text-overflow: ellipsis;   /* trunca si es muy largo */
+  box-sizing: border-box;
+}
+
+/* Fecha/hora a la izquierda: permite truncar si hace falta */
+.turno-left-inline {
+  flex: 0 1 auto;
+  color: #4b6b7a;
+  font-size: 13px;
+  min-width: 0;              /* necesario para que text-overflow funcione en flex */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* separador fijo */
+.turno-sep {
+  flex: 0 0 auto;
+  color: #4b6b7a;
+  padding: 0 6px;
+}
+
+/* Especialidad a la derecha: ocupa el resto del espacio y se alinea a la izquierda */
+.turno-right-inline {
+  flex: 1 1 auto;
+  text-align: left;
+  color: #06314f;
+  font-weight: 800;
+  min-width: 0;              /* permite truncado correcto */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 720px) {
+  .paciente-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .avatar-mini {
+    margin: 0 auto;
+  }
+
+  /* Opcional: reducir espacio vertical en móviles */
+  .ultimo-turno-inline {
+    gap: 4px;
+  }
+
+  .turno-left-inline {
+    font-size: 12.5px;
+  }
+
+  .turno-right-inline {
+    font-size: 13px;
+  }
+}

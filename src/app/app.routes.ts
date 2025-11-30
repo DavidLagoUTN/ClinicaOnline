@@ -12,4 +12,5 @@ export const routes: Routes = [
   { path: 'solicitar-turno', loadComponent: () => import('./paginas/solicitar-turno/solicitar-turno').then(m => m.SolicitarTurno), canActivate: [PacienteGuard] },
   { path: 'mis-turnos', loadComponent: () => import('./paginas/mis-turnos/mis-turnos').then(m => m.MisTurnos) },
   { path: 'turnos', loadComponent: () => import('./paginas/turnos/turnos').then(m => m.Turnos) },
+  { path: 'pacientes', loadComponent: () => import('./paginas/pacientes/pacientes').then(m => m.Pacientes) },
 ];

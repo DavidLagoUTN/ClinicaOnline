@@ -19,88 +19,180 @@
         <p *ngIf="edad !== undefined"><span class="campo">Edad:</span> <span class="contenido">{{ edad }}</span></p>
         <p *ngIf="mail"><span class="campo">Correo:</span> <span class="contenido">{{ mail }}</span></p>
 
+        <!-- Duración de turnos (solo especialistas) -->
         <div *ngIf="tipo === 'especialista'" class="duracion-turno" style="display:flex; align-items:center; gap:8px;">
           <details class="duracion-details" style="display:flex; align-items:center; width:100%;">
-            <summary class="duracion-summary" style="list-style:none; margin:0; padding:0; display:flex; align-items:center; gap:8px; width:100%; cursor:pointer;">
+            <summary class="duracion-summary"
+                     style="list-style:none; margin:0; padding:0; display:flex; align-items:center; gap:8px; width:100%; cursor:pointer;">
               <span class="campo" style="cursor:default;">Duración Turnos:</span>
 
-              <span *ngIf="!editarDuracion" class="contenido" style="cursor:pointer; margin-left:-8px; display:flex; align-items:center; gap:8px; padding-bottom: 0px; ; padding-top: 0px">
-                <span (click)="duracionTurnoTmp = duracionTurno; editarDuracion = true" style="cursor:pointer; margin-right:8px">
+              <span *ngIf="!editarDuracion" class="contenido"
+                    style="cursor:pointer; margin-left:-8px; display:flex; align-items:center; gap:8px;">
+                <span (click)="duracionTurnoTmp = duracionTurno; editarDuracion = true"
+                      style="cursor:pointer; margin-right:8px">
                   {{ duracionTurno }} min
                 </span>
                 <span class="chevron" aria-hidden="true" (click)="editarDuracion = true"></span>
               </span>
 
-              <!-- espacio flexible para empujar editor a la derecha -->
               <span style="flex:1 1 auto;"></span>
 
-              <!-- edición inline (misma fila, aparece cuando editarDuracion = true) -->
               <span *ngIf="editarDuracion" style="display:flex; align-items:center; gap:8px;">
-                <input type="number" min="30" step="5" [(ngModel)]="duracionTurnoTmp" aria-label="Duración de turno en minutos"
-                style="width:45px; padding:4px; margin-left: -10px ; border-radius:6px; border:1px solid rgba(0,0,0,0.12);"/>
-                <span class="contenido" style="margin-left:-12px; margin-right:-8px;">min</span>
+                <input type="number" min="30" step="5" [(ngModel)]="duracionTurnoTmp"
+                       aria-label="Duración de turno en minutos"
+                       style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);" />
+                <span class="contenido">min</span>
                 <button type="button" class="btn-reducido" (click)="guardarDuracion()">Guardar</button>
                 <button type="button" class="btn-reducido" (click)="cancelarEditarDuracion()">Cancelar</button>
               </span>
             </summary>
           </details>
         </div>
-        <!-- FIN: BLOQUE ADICIONADO -->
 
-        <!-- INICIO: bloque de especialidades como desplegable accionado por el span -->
+        <!-- Especialidades (solo especialistas) -->
         <div *ngIf="tipo === 'especialista'" class="especialidades-perfil">
-          
           <details class="especialidades-details">
-            <summary class="especialidades-summary" style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-              <span class="campo" style="cursor:pointer;">Especialidades:</span>
+            <summary class="especialidades-summary"
+                     style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+              <span class="campo">Especialidades:</span>
               <span class="contenido" style="margin-left:-8px;">
-                {{ especialidades? (especialidades.join(', ')) : 'Sin especialidades' }}
+                {{ especialidades ? (especialidades.join(', ')) : 'Sin especialidades' }}
               </span>
               <span class="chevron" aria-hidden="true"></span>
             </summary>
 
             <div class="especialidades-list" style="margin-top:8px;">
-              <!-- Mostrar todas las especialidades del sistema como opciones (checkbox) -->
               <div *ngIf="todasEspecialidades?.length" style="display:flex;flex-direction:column;gap:6px;">
                 <div *ngFor="let esp of todasEspecialidades" class="especialidad-item">
                   <label style="display:flex;align-items:center;gap:8px;flex:1; cursor: pointer;">
-                    <input type="checkbox" [value]="esp" (change)="toggleEspecialidadLocalFromCheckbox(esp, $event)"
-                      [checked]="seleccionadasLocal?.includes(esp)" />
+                    <input type="checkbox" [value]="esp"
+                           (change)="toggleEspecialidadLocalFromCheckbox(esp, $event)"
+                           [checked]="seleccionadasLocal.includes(esp)" />
                     <span>{{ esp }}</span>
                   </label>
                 </div>
               </div>
 
-              <!-- Si no hay especialidades cargadas en sistema -->
               <div *ngIf="!todasEspecialidades?.length" style="color:#083049;padding:6px 0;">
                 No hay especialidades disponibles
               </div>
 
-              <!-- Campo para agregar una nueva especialidad -->
               <div class="nueva-especialidad" style="margin-top:8px; display:flex; gap:8px; align-items:center;">
                 <input [(ngModel)]="nuevaEspecialidadLocal" placeholder="Nueva especialidad..."
-                  style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid rgba(16,78,167,0.12);" />
+                       style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid rgba(16,78,167,0.12);" />
                 <button type="button" class="btn-add" (click)="confirmarAgregarNuevaEspecialidad()"
-                  style="padding:6px 10px;">
-                  Agregar
-                </button>
+                        style="padding:6px 10px;">Agregar</button>
               </div>
 
-              <!-- Acciones: guardar / cancelar (pliegan el details cuando se usan) -->
               <div class="acciones-edicion" style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
                 <button type="button" class="btn-cancel"
-                  (click)="cancelarEdicionEspecialidades(); closeEspecialidadesDetails()">Cancelar</button>
+                        (click)="cancelarEdicionEspecialidades(); closeEspecialidadesDetails()">Cancelar</button>
                 <button type="button" class="btn-save"
-                  (click)="guardarEspecialidades(); closeEspecialidadesDetails()">Guardar cambios</button>
+                        (click)="guardarEspecialidades(); closeEspecialidadesDetails()">Guardar cambios</button>
               </div>
             </div>
           </details>
         </div>
-        <!-- FIN: bloque de especialidades como desplegable accionado por el span -->
 
+        <!-- Obra social y sección historia clínica (solo pacientes) -->
         <div *ngIf="tipo === 'paciente'">
-          <p *ngIf="obraSocial"><span class="campo">Obra social:</span> <span class="contenido">{{ obraSocial }}</span>
-          </p>
+          <p *ngIf="obraSocial"><span class="campo">Obra social:</span> <span class="contenido">{{ obraSocial }}</span></p>
+
+          <!-- Contenedor de historia clínica: bordeado y separado -->
+          <div class="historia-contenedor" id="historia-{{uid}}" aria-live="polite" style="margin-top:12px;">
+            <div *ngIf="loadingHistoriaMap[uid]" class="muted">Cargando historia clínica...</div>
+
+            <!-- Mensaje cuando no hay registros -->
+            <div *ngIf="!loadingHistoriaMap[uid] && (!historiasMap[uid] || (historiasMap[uid] && historiasMap[uid].length === 0))"
+                 class="muted">No hay registros en la historia clínica.</div>
+
+            <!-- Lista de entradas (cuando historiasMap[uid] es array) -->
+            <div *ngIf="!loadingHistoriaMap[uid] && historiasMap[uid] && (historiasMap[uid].length !== undefined)">
+              <div *ngFor="let h of historiasMap[uid]" class="historia-separada" style="padding:10px 10px; border-bottom:1px solid #f3f3f3;">
+                <div class="historia-header" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                  <strong class="historia-title">Historia Clínica</strong>
+                </div>
+
+                <div class="historia-grid" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px;">
+                  <div class="historia-item" style="min-width:140px;">
+                    <div class="label muted">Peso</div>
+                    <div class="value">{{ h.peso ?? '—' }} kg</div>
+                  </div>
+
+                  <div class="historia-item" style="min-width:140px;">
+                    <div class="label muted">Altura</div>
+                    <div class="value">{{ h.altura ?? '—' }} cm</div>
+                  </div>
+
+                  <div class="historia-item" style="min-width:140px;">
+                    <div class="label muted">Temperatura</div>
+                    <div class="value">{{ h.temperatura ?? '—' }} °C</div>
+                  </div>
+
+                  <div class="historia-item" style="min-width:140px;">
+                    <div class="label muted">Presión</div>
+                    <div class="value">{{ h.presion ?? '—' }} mmHg</div>
+                  </div>
+                </div>
+
+                <div *ngIf="(h.dinamicos || []).length > 0" class="historia-dinamicos" style="margin-top:8px;">
+                  <div class="cancel-label muted" style="margin-bottom:6px;">Datos adicionales</div>
+                  <div class="dinamicos-list">
+                    <div *ngFor="let d of h.dinamicos" class="cancel-text" style="margin-bottom:4px;">
+                      <strong>{{ d.clave }}:</strong> {{ d.valor }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Entrada única (cuando historiasMap[uid] es objeto) -->
+            <div *ngIf="!loadingHistoriaMap[uid] && historiasMap[uid] && (historiasMap[uid].length === undefined)" class="historia-separada" style="padding:10px 0;">
+              <div class="historia-header" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                <strong class="historia-title">Historia Clínica</strong>
+              </div>
+
+              <div class="historia-grid" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px;">
+                <div class="historia-item" style="min-width:140px;">
+                  <div class="label muted">Peso</div>
+                  <div class="value">{{ historiasMap[uid].peso ?? '—' }} kg</div>
+                </div>
+
+                <div class="historia-item" style="min-width:140px;">
+                  <div class="label muted">Altura</div>
+                  <div class="value">{{ historiasMap[uid].altura ?? '—' }} cm</div>
+                </div>
+
+                <div class="historia-item" style="min-width:140px;">
+                  <div class="label muted">Temperatura</div>
+                  <div class="value">{{ historiasMap[uid].temperatura ?? '—' }} °C</div>
+                </div>
+
+                <div class="historia-item" style="min-width:140px;">
+                  <div class="label muted">Presión</div>
+                  <div class="value">{{ historiasMap[uid].presion ?? '—' }}</div>
+                </div>
+              </div>
+
+              <div *ngIf="(historiasMap[uid].dinamicos || []).length > 0" class="historia-dinamicos" style="margin-top:8px;">
+                <div class="cancel-label muted" style="margin-bottom:6px;">Datos adicionales</div>
+                <div class="dinamicos-list">
+                  <div *ngFor="let d of historiasMap[uid].dinamicos" class="cancel-text" style="margin-bottom:4px;">
+                    <strong>{{ d.clave }}:</strong> {{ d.valor }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Botón para descargar PDF (dentro del contenedor que se captura) -->
+          <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+            <button class="btn-save"
+                    (click)="downloadHistoriaPdf(uid)"
+                    [disabled]="loadingHistoriaMap[uid] || generandoPdfMap[uid]">
+              Descargar PDF
+            </button>
+          </div>
+          <!-- fin historia-contenedor -->
         </div>
       </div>
 

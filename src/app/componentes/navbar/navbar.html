@@ -12,6 +12,10 @@
     <button *ngIf="isLoggedIn && esAdmin" class="usuarios-btn" (click)="router.navigate(['/usuarios'])">
       <span class="navbar-label">Usuarios</span>
     </button>
+
+    <button *ngIf="isLoggedIn && esEspecialista" class="usuarios-btn" (click)="router.navigate(['/pacientes'])">
+      <span class="navbar-label">Pacientes</span>
+    </button>
   </div>
 
   <!-- CENTRO: Título dinámico -->
