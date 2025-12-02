@@ -6,11 +6,10 @@ import { Directive, ElementRef, Input, Output, EventEmitter, HostListener, Rende
 })
 export class CaptchaAdminDirective implements OnInit, OnChanges {
   @Input() esAdmin: boolean = false;
-  @Input() captchaActivo: boolean = true; // Recibe el estado real desde el padre
+  @Input() captchaActivo: boolean = true;
   @Output() captchaState = new EventEmitter<boolean>();
 
   constructor(private el: ElementRef, private renderer: Renderer2) {
-    // Estilos base
     this.renderer.setStyle(this.el.nativeElement, 'display', 'none');
     this.renderer.setStyle(this.el.nativeElement, 'margin', '10px 0');
     this.renderer.setStyle(this.el.nativeElement, 'padding', '8px 16px');
@@ -48,19 +47,17 @@ export class CaptchaAdminDirective implements OnInit, OnChanges {
   @HostListener('click')
   onClick() {
     if (!this.esAdmin) return;
-    // Emitimos el valor opuesto al actual para solicitar el cambio
     this.captchaState.emit(!this.captchaActivo);
   }
 
   private actualizarApariencia() {
-    // Se basa en el Input captchaActivo, no en una variable local
     if (this.captchaActivo) {
       this.renderer.setProperty(this.el.nativeElement, 'innerText', 'Desactivar Captcha');
-      this.renderer.setStyle(this.el.nativeElement, 'backgroundColor', '#ffc107'); // Amarillo warning
+      this.renderer.setStyle(this.el.nativeElement, 'backgroundColor', '#ffc107'); 
       this.renderer.setStyle(this.el.nativeElement, 'color', '#333');
     } else {
       this.renderer.setProperty(this.el.nativeElement, 'innerText', 'Activar Captcha');
-      this.renderer.setStyle(this.el.nativeElement, 'backgroundColor', '#28a745'); // Verde success
+      this.renderer.setStyle(this.el.nativeElement, 'backgroundColor', '#28a745'); 
       this.renderer.setStyle(this.el.nativeElement, 'color', 'white');
     }
   }

@@ -99,8 +99,11 @@
             [captchaActivo]="captchaHabilitado" 
             (captchaState)="manejarCaptcha($event)"></button>
 
-    <!-- Contenedor del Captcha (IMPORTANTE: *ngIf controla si existe en el DOM) -->
-    <div *ngIf="captchaHabilitado" id="captcha-container" class="captcha-wrapper"></div>
+    <!-- Contenedor del Captcha -->
+    <!-- Usamos reloadingCaptcha para forzar destrucción/recreación del DOM -->
+    <div *ngIf="captchaHabilitado && !reloadingCaptcha" style="margin-top: 15px; display: flex; justify-content: center;">
+        <div id="captcha-container"></div>
+    </div>
     
     <button type="submit" class="btn-primary" [disabled]="isLoading">Registrar</button>
   </ng-container>

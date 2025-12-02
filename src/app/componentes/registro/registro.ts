@@ -7,7 +7,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
 import { LoadingComponent } from "../loading/loading";
 import { supabase } from '../../servicios/supabase';
-// Eliminamos NgxCaptchaModule porque lo estamos manejando manualmente para mayor control
 import { EspecialidadDoc, EspecialidadesService } from '../../servicios/especialidades.service';
 import { map } from 'rxjs';
 import { CaptchaAdminDirective } from '../../directivas/captcha-admin.directive';
@@ -26,7 +25,7 @@ import { CaptchaAdminDirective } from '../../directivas/captcha-admin.directive'
   templateUrl: './registro.html',
   styleUrls: ['./registro.scss']
 })
-export class Registro implements OnInit, AfterViewInit, OnDestroy {
+export class Registro implements OnInit, OnDestroy {
   @Input() modoAdmin: boolean = false;
   @Output() cerrar = new EventEmitter<void>();
 
@@ -35,10 +34,10 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
   }
   isLoading = false;
   
-  // Inicializamos en false. Solo se pondrá true tras leer la DB.
+  // Configuración de BD
   captchaHabilitado: boolean = false;
-  // Bandera para saber si ya leimos la configuración
-  configLoaded: boolean = false;
+  // Flag para destruir/recrear el div en el HTML
+  reloadingCaptcha: boolean = false;
 
   form!: FormGroup;
   tipoSeleccionado: '' | 'paciente' | 'especialista' | 'admin' = '';
@@ -51,7 +50,6 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
   captchaToken: string | null = null;
   
   private captchaInterval: any;
-  private widgetId: number | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -66,31 +64,21 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
   async ngOnInit() {
     this.crearFormulario();
     
-    // 1. Cargar script si no existe
+    // 1. Inyectar script de Google si no existe (solo una vez)
     this.cargarScriptCaptcha();
 
-    // 2. Cargar configuración
+    // 2. Cargar configuración y luego renderizar
     await this.cargarConfiguracionCaptcha();
 
     // 3. Cargar especialidades
     this.especialidadesSvc.listAll().pipe(
       map((list: EspecialidadDoc[]) =>
-        list
-          .map(i => i.nombre)
-          .filter(Boolean)
-          .map(s => s.trim())
-          .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+        list.map(i => i.nombre).filter(Boolean).map(s => s.trim())
+            .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
       )
     ).subscribe((nombres: string[]) => {
       this.especialidades = nombres;
     });
-  }
-
-  ngAfterViewInit(): void {
-    // Intentar renderizar si la config ya cargó
-    if (this.configLoaded && this.captchaHabilitado) {
-      this.iniciarRenderizadoCaptcha();
-    }
   }
 
   ngOnDestroy(): void {
@@ -98,8 +86,7 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cargarScriptCaptcha() {
-    if (document.getElementById('google-recaptcha-script')) return; // Ya existe
-
+    if (document.getElementById('google-recaptcha-script')) return;
     const script = document.createElement('script');
     script.id = 'google-recaptcha-script';
     script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
@@ -117,78 +104,86 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
         const data = snap.data();
         this.captchaHabilitado = data['captchaHabilitado'] !== false;
       } else {
-        // Documento no existe: default true
-        this.captchaHabilitado = true;
+        this.captchaHabilitado = true; 
       }
     } catch (e) {
-      console.warn('Error leyendo config captcha (posible falta de permisos públicos), activando por defecto.', e);
+      console.log('No se pudo leer config (usuario invitado), activando captcha por defecto.');
       this.captchaHabilitado = true;
-    } finally {
-      this.configLoaded = true;
-      this.cd.detectChanges(); // Actualizar DOM para que aparezca el div si es true
+    }
 
-      if (this.captchaHabilitado) {
-        this.iniciarRenderizadoCaptcha();
-      }
+    // Una vez tenemos el valor, si es true, iniciamos el proceso de renderizado limpio
+    if (this.captchaHabilitado) {
+      this.recargarCaptcha();
     }
   }
 
   async manejarCaptcha(estado: boolean) {
     this.captchaHabilitado = estado;
-    this.cd.detectChanges();
-
-    // Guardar en DB
-    try {
-      const ref = doc(this.firestore, 'configuracion', 'registro');
-      await setDoc(ref, { captchaHabilitado: estado }, { merge: true });
-    } catch (e) {
-      console.error('Error guardando config captcha', e);
-      this.snackBar.open('Error guardando configuración. Verifica permisos.', undefined, { duration: 2000 });
+    
+    // Guardar en DB solo si es admin (si no, es solo cambio visual local para pruebas)
+    if (this.modoAdmin) {
+        try {
+        const ref = doc(this.firestore, 'configuracion', 'registro');
+        await setDoc(ref, { captchaHabilitado: estado }, { merge: true });
+        } catch (e) {
+        console.error('Error guardando config', e);
+        }
     }
 
     if (this.captchaHabilitado) {
-      this.iniciarRenderizadoCaptcha();
+      this.recargarCaptcha();
     } else {
-      // Si se deshabilita, limpiamos validación
       this.captchaToken = null;
       if (this.form.get('captcha')) this.form.removeControl('captcha');
     }
+  }
+
+  // Método Mágico: Destruye y recrea el componente visual para evitar "Already Rendered"
+  recargarCaptcha() {
+    this.reloadingCaptcha = true;
+    this.cd.detectChanges(); // Angular elimina el div del DOM
+
+    setTimeout(() => {
+      this.reloadingCaptcha = false;
+      this.cd.detectChanges(); // Angular crea un div NUEVO y limpio
+      
+      // Ahora sí, intentamos renderizar en el nuevo div
+      this.iniciarRenderizadoCaptcha();
+    }, 100);
   }
 
   iniciarRenderizadoCaptcha() {
     if (this.captchaInterval) clearInterval(this.captchaInterval);
 
     this.captchaInterval = setInterval(() => {
+      const w = window as any;
       const container = document.getElementById('captcha-container');
-      const grecaptcha = (window as any).grecaptcha;
-
-      // Esperar a que exista el contenedor Y la librería esté lista
-      if (container && grecaptcha && grecaptcha.render) {
+      
+      if (w.grecaptcha && w.grecaptcha.render && container) {
         clearInterval(this.captchaInterval);
-        
         try {
-          // Limpiar contenido previo para evitar duplicados
-          container.innerHTML = ''; 
-          
-          // Renderizar
-          this.widgetId = grecaptcha.render('captcha-container', {
-            'sitekey': '6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH',
-            'callback': (response: string) => {
-              this.captchaToken = response;
-              // Sincronizar form
-              if (this.form.get('captcha')) {
-                this.form.get('captcha')?.setValue(response);
-              } else {
-                this.form.addControl('captcha', this.fb.control(response, Validators.required));
-              }
-            },
-            'expired-callback': () => {
-              this.captchaToken = null;
-              this.form.get('captcha')?.setValue(null);
-            }
-          });
+            // Limpiamos por seguridad, aunque el div debería ser nuevo
+            container.innerHTML = ''; 
+            
+            w.grecaptcha.render('captcha-container', {
+                'sitekey': '6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH',
+                'theme': 'light',
+                'callback': (response: string) => {
+                    this.captchaToken = response;
+                    if (this.form.get('captcha')) {
+                        this.form.get('captcha')?.setValue(response);
+                    } else {
+                        this.form.addControl('captcha', this.fb.control(response, Validators.required));
+                    }
+                },
+                'expired-callback': () => {
+                    this.captchaToken = null;
+                    this.form.get('captcha')?.setValue(null);
+                }
+            });
         } catch (e) {
-          console.log('Captcha ya renderizado o error:', e);
+           // Si falla, reintentamos
+           console.log('Reintentando render...', e);
         }
       }
     }, 200);
@@ -198,19 +193,15 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
     if (this.tipoSeleccionado === tipo) return;
     this.tipoSeleccionado = tipo;
     this.crearFormulario();
-
-    // Pequeño delay para que Angular renderice el nuevo DOM del formulario
-    setTimeout(() => {
-      this.cd.detectChanges();
-      if (this.captchaHabilitado) {
-        this.iniciarRenderizadoCaptcha();
-      }
-    }, 100);
+    
+    // Al cambiar de tipo, si el captcha está activo, lo regeneramos desde cero
+    if (this.captchaHabilitado) {
+        this.recargarCaptcha();
+    }
   }
 
-  // ... Resto de métodos (crearFormulario, imágenes, submit) IDÉNTICOS, 
-  // solo asegurate que onSubmit chequee this.captchaHabilitado ...
-
+  // ... (Resto de métodos: crearFormulario, imágenes, submit se mantienen igual) ...
+  
   crearFormulario(): void {
     const soloLetras = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/;
     const soloNumeros = /^\d+$/;
@@ -360,14 +351,13 @@ export class Registro implements OnInit, AfterViewInit, OnDestroy {
 
   async onSubmit(): Promise<void> {
     this.form.markAllAsTouched();
-    
     if (this.form.invalid) {
         this.snackBar.open('Complete todos los campos correctamente', undefined, { duration: 3000, panelClass: ['mat-warn'] });
         return;
     }
 
     // IMPORTANTE: Solo validar captcha si está habilitado y cargó la config
-    if (this.configLoaded && this.captchaHabilitado) {
+    if (this.captchaHabilitado) {
        if (!this.captchaToken) {
          this.snackBar.open('Por favor, completá el captcha', undefined, { duration: 3000, panelClass: ['mat-warn'] });
          return;
