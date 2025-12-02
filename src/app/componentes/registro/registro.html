@@ -3,25 +3,22 @@
 </div>
 <h1 class="titulo">Complete los campos</h1>
 <form [formGroup]="form" (ngSubmit)="onSubmit()" class="registro-form">
-  <!-- Selector visual por imagen -->
+  <!-- Selector visual -->
   <div class="tipo-grid" role="radiogroup" aria-label="Tipo de registro">
     <button type="button" class="tipo-card" role="radio" [attr.aria-checked]="tipoSeleccionado === 'paciente'"
-      (click)="seleccionarTipo('paciente')" (keydown.enter)="seleccionarTipo('paciente')"
-      (keydown.space)="seleccionarTipo('paciente')" [class.selected]="tipoSeleccionado === 'paciente'">
+      (click)="seleccionarTipo('paciente')" [class.selected]="tipoSeleccionado === 'paciente'">
       <img src="/assets/registroPaciente.png" alt="Registro Paciente" class="tipo-img" />
       <div class="tipo-label">Paciente</div>
     </button>
 
     <button type="button" class="tipo-card" role="radio" [attr.aria-checked]="tipoSeleccionado === 'especialista'"
-      (click)="seleccionarTipo('especialista')" (keydown.enter)="seleccionarTipo('especialista')"
-      (keydown.space)="seleccionarTipo('especialista')" [class.selected]="tipoSeleccionado === 'especialista'">
+      (click)="seleccionarTipo('especialista')" [class.selected]="tipoSeleccionado === 'especialista'">
       <img src="/assets/registroEspecialista.png" alt="Registro Especialista" class="tipo-img" />
       <div class="tipo-label">Especialista</div>
     </button>
 
     <button *ngIf="modoAdmin" type="button" class="tipo-card" role="radio"
       [attr.aria-checked]="tipoSeleccionado === 'admin'" (click)="seleccionarTipo('admin')"
-      (keydown.enter)="seleccionarTipo('admin')" (keydown.space)="seleccionarTipo('admin')"
       [class.selected]="tipoSeleccionado === 'admin'">
       <img src="/assets/registroAdmin.png" alt="Registro Administrador" class="tipo-img" />
       <div class="tipo-label">Administrador</div>
@@ -29,37 +26,30 @@
   </div>
 
 
-  <!-- Campos visibles solo si hay tipo seleccionado -->
+  <!-- Campos -->
   <ng-container *ngIf="tipoSeleccionado">
     <div class="form-bloque">
-      <!-- Campos comunes -->
       <input class="campo" id="nombre" formControlName="nombre" placeholder="Nombre" />
       <input class="campo" id="apellido" formControlName="apellido" placeholder="Apellido" />
       <input class="campo" id="edad" formControlName="edad" type="number" placeholder="Edad" />
       <input class="campo" id="dni" formControlName="dni" placeholder="DNI" />
 
-      <!-- Obra social (paciente) -->
-      <input class="campo" *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial"
-        placeholder="Obra Social" />
+      <input class="campo" *ngIf="tipoSeleccionado === 'paciente'" formControlName="obraSocial" placeholder="Obra Social" />
 
       <!-- Especialidades (especialista) -->
       <div *ngIf="tipoSeleccionado === 'especialista'" class="form-bloque-especialidades">
-        <!-- Selector plegable -->
         <details class="especialidades-details">
           <summary class="especialidades-summary">Seleccionar especialidades
             <span class="count">({{(form.get('especialidadesSeleccionadas')?.value || []).length }})</span>
           </summary>
 
           <div class="especialidades-list">
-            <!-- Lista ordenada de especialidades desde Firestore -->
             <div *ngFor="let esp of especialidades" class="especialidad-item">
-
               <input type="checkbox" [value]="esp" (change)="toggleEspecialidad(esp, $event)"
                 [checked]="form.get('especialidadesSeleccionadas')?.value?.includes(esp)" />
               {{ esp }}
             </div>
 
-            <!-- Agregar nueva especialidad (mantiene tu UX) -->
             <div class="nueva-especialidad">
               <button type="button" (click)="agregarCampoNuevaEspecialidad()"
                 *ngIf="!form.get('nuevaEspecialidad')">Agregar nueva especialidad</button>
@@ -76,50 +66,46 @@
         </details>
       </div>
 
-      <!-- Mail y contraseña -->
       <input class="campo" formControlName="mail" type="email" placeholder="Correo electrónico" />
       <input class="campo" formControlName="password" type="password" placeholder="Contraseña" />
 
-      <!-- Labels para imágenes -->
       <label *ngIf="tipoSeleccionado === 'especialista' || tipoSeleccionado === 'admin'">Imagen de perfil</label>
       <label *ngIf="tipoSeleccionado === 'paciente'">Imágenes de perfil</label>
 
-      <!-- Contenedor único para ambas imágenes / inputs SIN subcontendores -->
       <div class="images-container">
         <div class="image-slot">
-          <!-- Input 1 (visible si no hay preview) -->
           <label *ngIf="!imagenPreview" class="file-label">
             <input type="file" accept="image/*" (change)="onFileSelected($event, 'imagenPerfil')" />
             <span>Examinar...</span>
           </label>
-
-          <!-- Preview 1 (visible si hay imagen) -->
           <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Preview perfil" class="preview-img" />
-          <button *ngIf="imagenPreview" type="button" class="btn-trash" aria-label="Eliminar imagen de perfil"
-            (click)="removeImage('imagenPerfil')">🗑</button>
+          <button *ngIf="imagenPreview" type="button" class="btn-trash" (click)="removeImage('imagenPerfil')">🗑</button>
         </div>
 
         <div class="image-slot">
-          <!-- Input 2 (extra) - mostrado solo para paciente y si no hay preview extra -->
           <label *ngIf="tipoSeleccionado === 'paciente' && !imagenExtraPreview" class="file-label">
             <input type="file" accept="image/*" (change)="onFileSelected($event, 'imagenPerfilExtra')" />
             <span>Examinar...</span>
           </label>
-
-          <!-- Preview 2 (extra) - mostrado solo para paciente y si existe -->
-          <img *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" [src]="imagenExtraPreview"
-            alt="Preview adicional" class="preview-img" />
-          <button *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" type="button" class="btn-trash"
-            aria-label="Eliminar imagen adicional" (click)="removeImage('imagenPerfilExtra')">🗑</button>
+          <img *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" [src]="imagenExtraPreview" alt="Preview adicional" class="preview-img" />
+          <button *ngIf="imagenExtraPreview && tipoSeleccionado === 'paciente'" type="button" class="btn-trash" (click)="removeImage('imagenPerfilExtra')">🗑</button>
         </div>
       </div>
-      <!-- fin images-container -->
-
     </div>
-    <div id="captcha" class="captcha-wrapper" data-sitekey="6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH"></div>
+    
+    <!-- Botón Admin para activar/desactivar -->
+    <button type="button" appCaptchaAdmin 
+            [esAdmin]="modoAdmin" 
+            [captchaActivo]="captchaHabilitado" 
+            (captchaState)="manejarCaptcha($event)"></button>
+
+    <!-- Contenedor del Captcha (IMPORTANTE: *ngIf controla si existe en el DOM) -->
+    <div *ngIf="captchaHabilitado" id="captcha-container" class="captcha-wrapper"></div>
+    
     <button type="submit" class="btn-primary" [disabled]="isLoading">Registrar</button>
   </ng-container>
 </form>
+
 <button type="button" class="btn-volverAUsuarios" *ngIf="modoAdmin" (click)="cancelar()">
   Volver a la lista de usuarios
 </button>

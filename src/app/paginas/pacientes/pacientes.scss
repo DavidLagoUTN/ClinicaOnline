@@ -11,7 +11,7 @@
   padding: 1.25rem;
 }
 
-/* Tarjeta principal (reutiliza look & feel de mis-turnos) */
+/* Tarjeta principal */
 .tarjeta-mis-turnos {
   display: flex;
   flex-direction: column;
@@ -32,7 +32,7 @@
   gap: 0.75rem;
 }
 
-/* Card paciente (basada en turno-card) */
+/* Card paciente */
 .paciente-card {
   display: flex;
   gap: 1rem;
@@ -86,7 +86,7 @@
   color: #06314f;
 }
 
-/* Datos generales y layout de campos */
+/* Datos generales */
 .datos-turno {
   width: 100%;
 }
@@ -99,7 +99,7 @@
   align-items: center;
 }
 
-/* Panel expandible (reseña / historia) */
+/* Panel expandible */
 .resena-panel {
   max-height: 0;
   overflow: hidden;
@@ -112,19 +112,113 @@
 
 .resena-panel.open {
   padding: 10px;
-  max-height: 800px;
+  /* Eliminar max-height fijo para evitar cortes en listas largas */
+  max-height: none; 
   margin-top: 8px;
   background: rgba(16, 78, 167, 0.03);
   border: 1px solid rgba(16, 78, 167, 0.06);
 }
 
-.cancel-label {
-  font-weight: 700;
-  color: #06314f;
+/* --- ESTILOS DE HISTORIA CLÍNICA (Iguales a Usuarios/MiPerfil) --- */
+
+.historia-card {
+  background: rgba(240, 248, 255, 0.8);
+  border: 2px solid #104ea7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
 }
 
-.cancel-text {
+.historia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid rgba(16, 78, 167, 0.2);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.historia-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #104ea7;
+  text-transform: capitalize;
+}
+
+.historia-meta {
+  font-size: 0.95rem;
   color: #083049;
+}
+
+/* Grid estáticos */
+.historia-datos-fijos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.dato-box {
+  background: #e3f2fd;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #90caf9;
+}
+
+.dato-box .label {
+  display: block;
+  font-size: 0.75rem;
+  color: #104ea7;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.dato-box .value {
+  display: block;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #06314f;
+  white-space: nowrap;
+}
+
+/* Secciones */
+.historia-seccion {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 78, 167, 0.15);
+  margin-bottom: 10px;
+}
+
+.seccion-titulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #104ea7;
+  margin-bottom: 8px;
+  display: block;
+  text-transform: uppercase;
+}
+
+.items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.item-dato {
+  font-size: 0.95rem;
+  color: #083049;
+  background: rgba(50, 159, 202, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.texto-bloque {
+  font-size: 0.95rem;
+  color: #06314f;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
@@ -142,27 +236,24 @@ button {
   border: 2px solid rgba(16,78,167,0.12);
 }
 
-.btn-danger {
-  background: #c0392b;
-  color: #fff;
-  border: none;
-}
-
 /* Form controls */
-.form-control {
-  width: 100%;
+.input-buscador {
   padding: 8px;
   border-radius: 6px;
   border: 1px solid rgba(16,78,167,0.12);
-  box-sizing: border-box;
 }
 
-/* Small utility */
-.ultima-list {
-  margin-top: 6px;
-  color: #083049;
+.header-controls {
+  display: flex;
+  gap: 10px;
 }
 
+.filtros {
+  display: flex;
+  gap: 10px;
+}
+
+/* Utility */
 .empty {
   padding: 1rem;
   text-align: center;
@@ -170,76 +261,58 @@ button {
   font-weight: 700;
 }
 
-/* Lista inline: cada turno en una sola línea (últimos turnos) */
 .ultima-list-inline {
   display: flex;
   flex-direction: column;
   gap: 6px;
   width: 100%;
-  margin-top: 0;
 }
 
-/* Cada turno: fila única, no wrap */
 .ultimo-turno-inline {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  white-space: nowrap;        /* evita salto de línea */
-  overflow: hidden;
-  text-overflow: ellipsis;   /* trunca si es muy largo */
-  box-sizing: border-box;
-}
-
-/* Fecha/hora a la izquierda: permite truncar si hace falta */
-.turno-left-inline {
-  flex: 0 1 auto;
-  color: #4b6b7a;
-  font-size: 13px;
-  min-width: 0;              /* necesario para que text-overflow funcione en flex */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* separador fijo */
+.turno-left-inline {
+  flex: 0 1 auto;
+  color: #4b6b7a;
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .turno-sep {
   flex: 0 0 auto;
   color: #4b6b7a;
   padding: 0 6px;
 }
 
-/* Especialidad a la derecha: ocupa el resto del espacio y se alinea a la izquierda */
 .turno-right-inline {
   flex: 1 1 auto;
   text-align: left;
   color: #06314f;
   font-weight: 800;
-  min-width: 0;              /* permite truncado correcto */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 720px) {
   .paciente-card {
     flex-direction: column;
     align-items: stretch;
   }
-
   .avatar-mini {
     margin: 0 auto;
   }
-
-  /* Opcional: reducir espacio vertical en móviles */
-  .ultimo-turno-inline {
-    gap: 4px;
-  }
-
-  .turno-left-inline {
-    font-size: 12.5px;
-  }
-
-  .turno-right-inline {
-    font-size: 13px;
+  .historia-datos-fijos {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

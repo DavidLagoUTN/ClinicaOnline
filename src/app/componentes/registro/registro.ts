@@ -1,24 +1,32 @@
-import { Component, OnInit, Input, AfterViewInit, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, AfterViewInit, Output, EventEmitter, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Auth, createUserWithEmailAndPassword, sendEmailVerification } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Firestore, doc, setDoc } from '@angular/fire/firestore';
+import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
 import { LoadingComponent } from "../loading/loading";
 import { supabase } from '../../servicios/supabase';
-import { NgxCaptchaModule } from 'ngx-captcha';
+// Eliminamos NgxCaptchaModule porque lo estamos manejando manualmente para mayor control
 import { EspecialidadDoc, EspecialidadesService } from '../../servicios/especialidades.service';
 import { map } from 'rxjs';
+import { CaptchaAdminDirective } from '../../directivas/captcha-admin.directive';
 
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatSnackBarModule, LoadingComponent, NgxCaptchaModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    ReactiveFormsModule, 
+    MatSnackBarModule, 
+    LoadingComponent,
+    CaptchaAdminDirective
+  ],
   templateUrl: './registro.html',
-  styleUrl: './registro.scss'
+  styleUrls: ['./registro.scss']
 })
-export class Registro implements OnInit, AfterViewInit {
+export class Registro implements OnInit, AfterViewInit, OnDestroy {
   @Input() modoAdmin: boolean = false;
   @Output() cerrar = new EventEmitter<void>();
 
@@ -26,18 +34,24 @@ export class Registro implements OnInit, AfterViewInit {
     this.cerrar.emit();
   }
   isLoading = false;
+  
+  // Inicializamos en false. Solo se pondrá true tras leer la DB.
+  captchaHabilitado: boolean = false;
+  // Bandera para saber si ya leimos la configuración
+  configLoaded: boolean = false;
 
   form!: FormGroup;
   tipoSeleccionado: '' | 'paciente' | 'especialista' | 'admin' = '';
   especialidades: string[] = [];
-  nuevasEspecialidades: string[] = [];
-
+  
   imagenPreview: string | null = null;
   imagenExtraPreview: string | null = null;
 
   public validators = Validators;
-
   captchaToken: string | null = null;
+  
+  private captchaInterval: any;
+  private widgetId: number | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -45,12 +59,20 @@ export class Registro implements OnInit, AfterViewInit {
     private firestore: Firestore,
     private router: Router,
     private snackBar: MatSnackBar,
-    private especialidadesSvc: EspecialidadesService
+    private especialidadesSvc: EspecialidadesService,
+    private cd: ChangeDetectorRef
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit() {
     this.crearFormulario();
+    
+    // 1. Cargar script si no existe
+    this.cargarScriptCaptcha();
 
+    // 2. Cargar configuración
+    await this.cargarConfiguracionCaptcha();
+
+    // 3. Cargar especialidades
     this.especialidadesSvc.listAll().pipe(
       map((list: EspecialidadDoc[]) =>
         list
@@ -61,21 +83,133 @@ export class Registro implements OnInit, AfterViewInit {
       )
     ).subscribe((nombres: string[]) => {
       this.especialidades = nombres;
-    }, err => {
-      console.error('Error cargando especialidades', err);
     });
   }
 
-  actualizarTipo(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as 'paciente' | 'especialista' | 'admin';
-    this.tipoSeleccionado = value;
+  ngAfterViewInit(): void {
+    // Intentar renderizar si la config ya cargó
+    if (this.configLoaded && this.captchaHabilitado) {
+      this.iniciarRenderizadoCaptcha();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.captchaInterval) clearInterval(this.captchaInterval);
+  }
+
+  cargarScriptCaptcha() {
+    if (document.getElementById('google-recaptcha-script')) return; // Ya existe
+
+    const script = document.createElement('script');
+    script.id = 'google-recaptcha-script';
+    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
+  async cargarConfiguracionCaptcha() {
+    try {
+      const ref = doc(this.firestore, 'configuracion', 'registro');
+      const snap = await getDoc(ref);
+      
+      if (snap.exists()) {
+        const data = snap.data();
+        this.captchaHabilitado = data['captchaHabilitado'] !== false;
+      } else {
+        // Documento no existe: default true
+        this.captchaHabilitado = true;
+      }
+    } catch (e) {
+      console.warn('Error leyendo config captcha (posible falta de permisos públicos), activando por defecto.', e);
+      this.captchaHabilitado = true;
+    } finally {
+      this.configLoaded = true;
+      this.cd.detectChanges(); // Actualizar DOM para que aparezca el div si es true
+
+      if (this.captchaHabilitado) {
+        this.iniciarRenderizadoCaptcha();
+      }
+    }
+  }
+
+  async manejarCaptcha(estado: boolean) {
+    this.captchaHabilitado = estado;
+    this.cd.detectChanges();
+
+    // Guardar en DB
+    try {
+      const ref = doc(this.firestore, 'configuracion', 'registro');
+      await setDoc(ref, { captchaHabilitado: estado }, { merge: true });
+    } catch (e) {
+      console.error('Error guardando config captcha', e);
+      this.snackBar.open('Error guardando configuración. Verifica permisos.', undefined, { duration: 2000 });
+    }
+
+    if (this.captchaHabilitado) {
+      this.iniciarRenderizadoCaptcha();
+    } else {
+      // Si se deshabilita, limpiamos validación
+      this.captchaToken = null;
+      if (this.form.get('captcha')) this.form.removeControl('captcha');
+    }
+  }
+
+  iniciarRenderizadoCaptcha() {
+    if (this.captchaInterval) clearInterval(this.captchaInterval);
+
+    this.captchaInterval = setInterval(() => {
+      const container = document.getElementById('captcha-container');
+      const grecaptcha = (window as any).grecaptcha;
+
+      // Esperar a que exista el contenedor Y la librería esté lista
+      if (container && grecaptcha && grecaptcha.render) {
+        clearInterval(this.captchaInterval);
+        
+        try {
+          // Limpiar contenido previo para evitar duplicados
+          container.innerHTML = ''; 
+          
+          // Renderizar
+          this.widgetId = grecaptcha.render('captcha-container', {
+            'sitekey': '6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH',
+            'callback': (response: string) => {
+              this.captchaToken = response;
+              // Sincronizar form
+              if (this.form.get('captcha')) {
+                this.form.get('captcha')?.setValue(response);
+              } else {
+                this.form.addControl('captcha', this.fb.control(response, Validators.required));
+              }
+            },
+            'expired-callback': () => {
+              this.captchaToken = null;
+              this.form.get('captcha')?.setValue(null);
+            }
+          });
+        } catch (e) {
+          console.log('Captcha ya renderizado o error:', e);
+        }
+      }
+    }, 200);
+  }
+
+  seleccionarTipo(tipo: 'paciente' | 'especialista' | 'admin'): void {
+    if (this.tipoSeleccionado === tipo) return;
+    this.tipoSeleccionado = tipo;
     this.crearFormulario();
 
+    // Pequeño delay para que Angular renderice el nuevo DOM del formulario
     setTimeout(() => {
-      document.body.offsetHeight;
-      window.dispatchEvent(new Event('resize'));
-    }, 0);
+      this.cd.detectChanges();
+      if (this.captchaHabilitado) {
+        this.iniciarRenderizadoCaptcha();
+      }
+    }, 100);
   }
+
+  // ... Resto de métodos (crearFormulario, imágenes, submit) IDÉNTICOS, 
+  // solo asegurate que onSubmit chequee this.captchaHabilitado ...
 
   crearFormulario(): void {
     const soloLetras = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/;
@@ -93,14 +227,12 @@ export class Registro implements OnInit, AfterViewInit {
       imagenPerfil: [null, Validators.required]
     };
 
-
     this.form = this.fb.group(base);
 
     if (this.tipoSeleccionado === 'paciente') {
       if (!this.form.get('obraSocial')) this.form.addControl('obraSocial', this.fb.control('', Validators.required));
       if (!this.form.get('imagenPerfilExtra')) this.form.addControl('imagenPerfilExtra', this.fb.control(null, Validators.required));
     } else {
-
       if (this.form.get('obraSocial')) this.form.removeControl('obraSocial');
       if (this.form.get('imagenPerfilExtra')) this.form.removeControl('imagenPerfilExtra');
     }
@@ -120,63 +252,41 @@ export class Registro implements OnInit, AfterViewInit {
 
   async agregarNuevaEspecialidad(): Promise<void> {
     const nueva = (this.form.get('nuevaEspecialidad')?.value || '').trim();
-    if (!nueva) {
-      return;
-    }
+    if (!nueva) return;
 
-    // normalizar (opcional): capitalizar primera letra, trim, etc.
     const nombreNormalizado = nueva;
-
     try {
-      // chequear existencia en Firestore (evita condiciones de carrera mínimas)
       const existe = await this.especialidadesSvc.existsByName(nombreNormalizado);
       if (!existe) {
         await this.especialidadesSvc.add(nombreNormalizado, this.auth.currentUser?.uid);
       }
-
-      // actualizar lista local (collectionData se encargará de sincronizar, pero actualizamos de forma optimista)
       if (!this.especialidades.includes(nombreNormalizado)) {
         this.especialidades.push(nombreNormalizado);
-      }
-
-      if (!this.especialidades.includes(nombreNormalizado)) {
-        this.especialidades.push(nombreNormalizado);
-        // reordenar localmente
         this.especialidades.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
       }
-
-
-      // añadir al control de seleccionadas si corresponde
       const actuales = this.form.get('especialidadesSeleccionadas')?.value || [];
       if (!actuales.includes(nombreNormalizado)) {
         this.form.get('especialidadesSeleccionadas')?.setValue([...actuales, nombreNormalizado]);
       }
-
-      // limpiar input nuevo
       if (this.form.get('nuevaEspecialidad')) this.form.removeControl('nuevaEspecialidad');
-
       this.snackBar.open('Especialidad agregada', undefined, { duration: 2000 });
     } catch (err: any) {
-      console.error('Error agregando especialidad', err);
-      this.snackBar.open('No se pudo agregar la especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+      this.snackBar.open('Error al agregar especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
     }
   }
 
   toggleEspecialidad(esp: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     const actuales = this.form.get('especialidadesSeleccionadas')?.value || [];
-    const actualizadas = checked
-      ? [...actuales, esp]
-      : actuales.filter((e: string) => e !== esp);
+    const actualizadas = checked ? [...actuales, esp] : actuales.filter((e: string) => e !== esp);
     this.form.get('especialidadesSeleccionadas')?.setValue(actualizadas);
   }
-
+  
   actualizarEspecialidadesSeleccionadas(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const seleccionadas = Array.from(select.selectedOptions).map(opt => opt.value);
     this.form.get('especialidadesSeleccionadas')?.setValue(seleccionadas);
   }
-
 
   async reducirImagen(file: File, maxKB = 500): Promise<File> {
     const img = await new Promise<HTMLImageElement>((res, rej) => {
@@ -190,96 +300,55 @@ export class Registro implements OnInit, AfterViewInit {
       reader.onerror = rej;
       reader.readAsDataURL(file);
     });
-
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     const ratio = img.width / img.height;
     const maxWidth = 1200;
     const width = img.width > maxWidth ? maxWidth : img.width;
     const height = img.width > maxWidth ? Math.round(maxWidth / ratio) : img.height;
-
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = width; canvas.height = height;
     ctx.drawImage(img, 0, 0, width, height);
-
     let quality = 0.85;
     let blob: Blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => {
-        if (b) resolve(b);
-        else reject(new Error('No se pudo generar el blob'));
-      }, 'image/jpeg', quality);
+      canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Error blob')), 'image/jpeg', quality);
     });
-
-
     while (blob.size / 1024 > maxKB && quality > 0.4) {
       quality -= 0.05;
       blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error('No se pudo generar el blob'));
-        }, 'image/jpeg', quality);
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Error blob')), 'image/jpeg', quality);
       });
-
     }
-
     return new File([blob], file.name, { type: 'image/jpeg' });
   }
 
   async subirAStorage(file: File, uid: string, tipo: 'perfil' | 'extra'): Promise<string> {
     const nombre = `${uid}/${tipo}_${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage
-      .from('imagenes')
-      .upload(nombre, file, { upsert: false });
-
+    const { error } = await supabase.storage.from('imagenes').upload(nombre, file, { upsert: false });
     if (error) throw error;
-
-    const { data } = supabase.storage
-      .from('imagenes')
-      .getPublicUrl(nombre);
-
+    const { data } = supabase.storage.from('imagenes').getPublicUrl(nombre);
     return data.publicUrl;
   }
-
 
   async onFileSelected(event: Event, controlName: string): Promise<void> {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
-
     try {
       const reducido = await this.reducirImagen(file, 500);
-
-      // Guardar el archivo reducido en el formulario (para subirlo luego)
       this.form.get(controlName)?.setValue(reducido);
-
-      // Mostrar preview
       const reader = new FileReader();
       reader.onload = () => {
-        if (controlName === 'imagenPerfil') {
-          this.imagenPreview = reader.result as string;
-        } else {
-          this.imagenExtraPreview = reader.result as string;
-        }
+        if (controlName === 'imagenPerfil') this.imagenPreview = reader.result as string;
+        else this.imagenExtraPreview = reader.result as string;
       };
       reader.readAsDataURL(reducido);
     } catch (err) {
-      console.error('Error al procesar imagen:', err);
-      this.snackBar.open('Error al procesar la imagen. Probá con otra.', undefined, {
-        duration: 4000,
-        panelClass: ['mat-warn']
-      });
+      this.snackBar.open('Error al procesar imagen', undefined, { duration: 4000, panelClass: ['mat-warn'] });
     }
   }
 
-  // dentro de export class Registro { ... }
   removeImage(controlName: 'imagenPerfil' | 'imagenPerfilExtra'): void {
-    // limpiar preview local
-    if (controlName === 'imagenPerfil') {
-      this.imagenPreview = null;
-    } else {
-      this.imagenExtraPreview = null;
-    }
-
-    // limpiar valor y estado del control en el formulario
+    if (controlName === 'imagenPerfil') this.imagenPreview = null;
+    else this.imagenExtraPreview = null;
     const control = this.form?.get(controlName);
     if (control) {
       control.setValue(null);
@@ -289,143 +358,22 @@ export class Registro implements OnInit, AfterViewInit {
     }
   }
 
-  seleccionarTipo(tipo: 'paciente' | 'especialista' | 'admin'): void {
-    if (this.tipoSeleccionado === tipo) return;
-    this.tipoSeleccionado = tipo;
-    this.crearFormulario();
-
-    // small UI refresh para que Angular re-renderice previews/inputs
-    setTimeout(() => {
-      document.body.offsetHeight;
-      window.dispatchEvent(new Event('resize'));
-    }, 0);
-  }
-
-
-  ngAfterViewInit(): void {
-    const checkInterval = setInterval(() => {
-      const captchaDiv = document.getElementById('captcha');
-      if (captchaDiv && (window as any).grecaptcha && (window as any).grecaptcha.render) {
-        try {
-          (window as any).grecaptcha.render('captcha', {
-            'sitekey': '6LdOdQIsAAAAAMkXRAYDkTVyVMwW-6xbD6Q4J2gH'
-          });
-        } catch (e) {
-        }
-        clearInterval(checkInterval);
-      }
-    }, 500);
-  }
-
-
-
   async onSubmit(): Promise<void> {
-    // forzar validación visual
     this.form.markAllAsTouched();
-
-    // validaciones antes de activar loader
-    const valores = this.form.getRawValue();
-    const campos = Object.keys(valores);
-    const todosVacios = campos.every(key => {
-      const valor = valores[key];
-      return valor === '' || valor === null || valor === undefined;
-    });
-
-    if (todosVacios) {
-      this.snackBar.open('Complete todos los campos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    const c = this.form.controls;
-    const edadMinima = this.tipoSeleccionado === 'paciente' ? 0 : 18;
-
-    if ((c['nombre'] && c['nombre'].hasError('required')) || (c['apellido'] && c['apellido'].hasError('required'))) {
-      this.snackBar.open('Nombre y Apellido son obligatorios y deben ser alfabéticos.', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if ((c['nombre'] && c['nombre'].hasError('pattern')) || (c['apellido'] && c['apellido'].hasError('pattern'))) {
-      this.snackBar.open('Solo se permiten letras en nombre y apellido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['edad'] && c['edad'].hasError('required')) {
-      this.snackBar.open('La edad es obligatoria y debe ser numérica', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['edad'] && (c['edad'].hasError('min') || c['edad'].hasError('max'))) {
-      this.snackBar.open(`La edad debe estar entre ${edadMinima} y 120 años`, undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['dni'] && c['dni'].hasError('required')) {
-      this.snackBar.open('El DNI es obligatorio y debe ser numérico', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['dni'] && c['dni'].hasError('pattern')) {
-      this.snackBar.open('El DNI debe tener al menos 8 dígitos', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (this.tipoSeleccionado === 'paciente' && c['obraSocial'] && c['obraSocial'].hasError('required')) {
-      this.snackBar.open('La obra social es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (this.tipoSeleccionado === 'especialista' && c['especialidadesSeleccionadas'] && c['especialidadesSeleccionadas'].hasError('required')) {
-      this.snackBar.open('Debés seleccionar al menos una especialidad', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['mail'] && c['mail'].hasError('required')) {
-      this.snackBar.open('El correo es obligatorio', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['mail'] && c['mail'].hasError('email')) {
-      this.snackBar.open('Ingrese un correo válido', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['password'] && c['password'].hasError('required')) {
-      this.snackBar.open('La contraseña es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['password'] && c['password'].hasError('minlength')) {
-      this.snackBar.open('La contraseña debe tener al menos 6 caracteres', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (c['imagenPerfil'] && c['imagenPerfil'].hasError('required')) {
-      this.snackBar.open('La imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-
-    if (this.tipoSeleccionado === 'paciente') {
-      const perfilBase = this.form.get('imagenPerfil')?.value;
-      const extraBase = this.form.get('imagenPerfilExtra')?.value;
-      if (!perfilBase || !extraBase) {
-        this.snackBar.open('La segunda imagen de perfil es obligatoria', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+    
+    if (this.form.invalid) {
+        this.snackBar.open('Complete todos los campos correctamente', undefined, { duration: 3000, panelClass: ['mat-warn'] });
         return;
-      }
     }
 
-    const tokenFromWidget = (window as any).grecaptcha ? (window as any).grecaptcha.getResponse() : null;
-    if (!tokenFromWidget) {
-      this.snackBar.open('Por favor, completá el captcha', undefined, { duration: 3000, panelClass: ['mat-warn'] });
-      return;
-    }
-    this.captchaToken = tokenFromWidget;
-    if (!this.form.get('captcha')) {
-      this.form.addControl('captcha', this.fb.control(tokenFromWidget, Validators.required));
-    } else {
-      this.form.get('captcha')?.setValue(tokenFromWidget);
+    // IMPORTANTE: Solo validar captcha si está habilitado y cargó la config
+    if (this.configLoaded && this.captchaHabilitado) {
+       if (!this.captchaToken) {
+         this.snackBar.open('Por favor, completá el captcha', undefined, { duration: 3000, panelClass: ['mat-warn'] });
+         return;
+       }
     }
 
-    // validado todo -> activar loader y ejecutar async
     this.isLoading = true;
     try {
       const { mail, password } = this.form.value;
@@ -434,7 +382,6 @@ export class Registro implements OnInit, AfterViewInit {
       await sendEmailVerification(cred.user);
 
       const uid = cred.user.uid;
-
       const perfilFile: File = this.form.get('imagenPerfil')?.value;
       const extraFile: File = this.form.get('imagenPerfilExtra')?.value;
 
@@ -462,18 +409,18 @@ export class Registro implements OnInit, AfterViewInit {
       delete perfil.password;
       delete perfil.especialidadesSeleccionadas;
       delete perfil.nuevaEspecialidad;
+      delete perfil.captcha;
 
       await setDoc(doc(this.firestore, 'usuarios', uid), perfil);
       await this.auth.signOut();
 
-      this.snackBar.open('Registro exitoso. Verificá tu correo antes de iniciar sesión.', undefined, { duration: 6000, panelClass: ['mat-success'] });
+      this.snackBar.open('Registro exitoso. Verificá tu correo.', undefined, { duration: 6000, panelClass: ['mat-success'] });
       this.router.navigate(['/login']);
     } catch (error: any) {
-      const msg = error.code === 'auth/email-already-in-use' ? 'El correo que ingresaste ya se encuentra registrado.' : error.message;
+      const msg = error.code === 'auth/email-already-in-use' ? 'El correo ya está registrado.' : error.message;
       this.snackBar.open(msg, undefined, { duration: 5000, panelClass: ['mat-warn'] });
     } finally {
       this.isLoading = false;
     }
   }
-
 }

@@ -1,3 +1,7 @@
+/* =========================
+   ESTILOS GENERALES Y PERFIL
+   ========================= */
+
 /* layout simple: imagen - datos - imagen */
 .fila {
   display: flex;
@@ -61,7 +65,128 @@
   border-radius: 6px;
 }
 
-/* Horarios compactos */
+/* =========================
+   HISTORIA CLÍNICA (Nuevos Estilos)
+   ========================= */
+
+.historia-contenedor {
+  margin-top: 12px;
+  padding-bottom: 20px; /* Espacio extra al final */
+}
+
+/* Tarjeta individual de historia */
+.historia-card {
+  /* Mismo estilo que .fila */
+  background: rgba(240, 248, 255, 0.6);
+  border: 3px solid #104ea7; /* Borde azul sólido */
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  position: relative; /* Para contexto de apilamiento */
+}
+
+/* Header de la tarjeta */
+.historia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid rgba(16, 78, 167, 0.2); /* Línea divisoria sutil azul */
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.historia-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #104ea7; /* Azul título */
+  text-transform: capitalize;
+}
+
+.historia-meta {
+  font-size: 0.95rem;
+  color: #083049;
+}
+
+/* Grid de datos fijos (peso, altura, etc) */
+.historia-datos-fijos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dato-box {
+  background: #f7f9fa; /* Fondo blanco humo para resaltar el dato */
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  border: 2px solid #329fca; /* Borde celeste como .campo */
+}
+
+.dato-box .label {
+  display: block;
+  font-size: 0.75rem;
+  color: #104ea7;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.dato-box .value {
+  display: block;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #06314f;
+}
+
+/* Secciones internas (Dinámicos, Opcionales, Textos) */
+.historia-seccion {
+  background: rgba(255, 255, 255, 0.5); /* Blanco semitransparente para legibilidad */
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 78, 167, 0.15);
+  margin-bottom: 10px;
+}
+
+/* Títulos de secciones internas (Datos adicionales, diagnositoc, etc) */
+.seccion-titulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #104ea7; /* Azul pedido */
+  margin-bottom: 8px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Listas de items clave-valor */
+.items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.item-dato {
+  font-size: 0.95rem;
+  color: #083049;
+  background: rgba(50, 159, 202, 0.1); /* Fondo celeste muy suave */
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.texto-bloque {
+  font-size: 0.95rem;
+  color: #06314f;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+
+/* =========================
+   HORARIOS Y MODALES (Existentes)
+   ========================= */
+
 .horarios-grid {
   display: flex;
   flex-wrap: wrap;
@@ -154,10 +279,7 @@
   content: '[modificar] ▼';
 }
 
-/* =========================
-   Modal y backdrop
-   ========================= */
-
+/* Modal y backdrop */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -181,7 +303,6 @@
   transition: transform 160ms ease, opacity 160ms ease;
 }
 
-/* Header */
 .modal-header {
   display: flex;
   align-items: center;
@@ -206,17 +327,15 @@
   color: #104ea7;
 }
 
-/* Grid/cards de días */
 .modal-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 días por fila */
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
   margin: 0.5rem 0 1rem;
 }
 
-/* Cada tarjeta ocupa todo el ancho de su columna */
 .modal-dia {
-  min-width: 0; /* evita que el min-width bloquee la rejilla */
+  min-width: 0;
   width: 100%;
   box-sizing: border-box;
   border: 1px solid rgba(16, 78, 167, 0.12);
@@ -225,7 +344,6 @@
   background-color: hsla(197, 54%, 55%, 0.85);
 }
 
-/* fila superior: título + controles inline */
 .modal-dia-row {
   display: flex;
   align-items: center;
@@ -243,7 +361,6 @@
   margin-bottom: 0;
 }
 
-/* controles compactos */
 .modal-controls,
 .modal-controls-inline {
   display: flex;
@@ -265,7 +382,7 @@
   min-width: 72px;
   border-radius: 6px;
   background: rgba(240, 248, 255, 0.6);
-  border: 1px solid  #329fca;
+  border: 1px solid #329fca;
   color: #083049;
   cursor: pointer;
 }
@@ -278,7 +395,6 @@
   box-shadow: 0 4px 10px rgba(16, 78, 167, 0.12);
 }
 
-/* Lista de rangos */
 .modal-rangos {
   list-style: none;
   padding: 0;
@@ -299,12 +415,12 @@
   font-size: 1rem;
   font-weight: 500;
   background: rgba(240, 248, 255, 0.6);
-  border: 1px solid  #329fca;
+  border: 1px solid #329fca;
   color: #083049;
 }
 
 .modal-rangos button {
-  background:  #b43a3a;
+  background: #b43a3a;
   border: 1px solid #6c2323;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
@@ -312,7 +428,6 @@
   font-weight: 600;
 }
 
-/* Footer acciones */
 .modal-footer {
   display: flex;
   justify-content: center;
@@ -327,140 +442,20 @@
 
 /* Responsive */
 @media (max-width: 900px) {
-  .modal-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .modal-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
-  .modal {
-    padding: 0.75rem;
-  }
-
-  .modal-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-controls {
-    gap: 0.3rem;
-  }
+  .modal { padding: 0.75rem; }
+  .modal-grid { grid-template-columns: 1fr; }
+  .modal-controls { gap: 0.3rem; }
+  .fila { flex-direction: column; align-items: center; }
+  .datos-centro { align-items: center; text-align: center; }
+  .datos-centro p { white-space: normal; }
 }
 
 @media (max-width: 520px) {
-  .modal-dia-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .modal-controls-inline select {
-    min-width: 100px;
-  }
-
-  .modal-dia {
-    min-width: auto;
-  }
-}
-
-/* spacing final para móviles */
-@media (max-width: 700px) {
-  .fila {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .datos-centro {
-    align-items: center;
-    text-align: center;
-  }
-
-  .datos-centro p {
-    white-space: normal;
-  }
-}
-
-/* Contenedor general de la historia clínica */
-.historia-contenedor {
-  margin-top: 12px;
-  padding: 12px;
-  background: #ffffff;
-  border: 1px solid rgba(16, 78, 167, 0.12);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(3, 16, 40, 0.04);
-}
-
-/* Cada bloque/entrada separada */
-.historia-separada {
-  padding: 10px 10px 10px 10px;
-  max-height: 800px;
-  margin-top: 8px;
-  background: rgba(16, 79, 167, 0.08);
-  border: 1px solid rgba(16, 79, 167, 0.293);
-}
-.historia-separada:last-child {
-  border-bottom: none;
-}
-
-/* Cabecera pequeña */
-.historia-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-}
-.historia-title {
-  color: #083049;
-  font-weight: 800;
-  font-size: 14px;
-}
-.historia-meta {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-/* Grid compacto para los datos estáticos */
-.historia-grid {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.historia-item {
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-}
-.label.muted {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-.value {
-  font-weight: 700;
-  color: #0b3b5a;
-}
-
-/* Dinámicos */
-.historia-dinamicos {
-  margin-top: 8px;
-}
-.cancel-label {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 6px;
-}
-.cancel-text {
-  font-size: 13px;
-  color: #0b3b5a;
-  margin-bottom: 4px;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .historia-grid {
-    flex-direction: column;
-  }
-  .historia-item {
-    min-width: 100%;
-  }
+  .modal-dia-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .modal-controls-inline select { min-width: 100px; }
+  .modal-dia { min-width: auto; }
 }

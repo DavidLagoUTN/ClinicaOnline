@@ -101,11 +101,11 @@ export class UsersService {
     return enriched;
   }
 
+  // Método antiguo (lo dejo por si acaso)
   async getHistoriaClinica(pacienteUid: string, especialistaUid?: string): Promise<any[]> {
     if (!pacienteUid) return [];
 
     try {
-      // 1) Intento por docId compuesto paciente_especialista
       if (especialistaUid) {
         const docId = `${pacienteUid}_${especialistaUid}`;
         const dRef = doc(this.firestore, `historias_clinicas/${docId}`);
@@ -113,12 +113,10 @@ export class UsersService {
         if (dSnap.exists()) return [{ id: dSnap.id, ...(dSnap.data() as any) }];
       }
 
-      // 2) Intento por docId igual a pacienteUid
       const dRef2 = doc(this.firestore, `historias_clinicas/${pacienteUid}`);
       const dSnap2 = await getDoc(dRef2);
       if (dSnap2.exists()) return [{ id: dSnap2.id, ...(dSnap2.data() as any) }];
 
-      // 3) Query por campo id_paciente
       const col = collection(this.firestore, 'historias_clinicas');
       const q = query(col, where('id_paciente', '==', pacienteUid));
       const snap = await getDocs(q);
@@ -126,11 +124,79 @@ export class UsersService {
         return snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       }
 
-      // 4) No encontrado
       return [];
     } catch (err) {
       console.error('getHistoriaClinica error', err);
       return [];
+    }
+  }
+
+  /**
+   * NUEVO MÉTODO: Obtiene el historial clínico completo basado en los TURNOS finalizados.
+   * Busca en la colección 'turnos' y enriquece con datos del especialista.
+   */
+  async getHistorialClinico(pacienteUid: string): Promise<any[]> {
+    try {
+      const turnosRef = collection(this.firestore, 'turnos');
+      const q = query(turnosRef, where('id_paciente', '==', pacienteUid));
+      const querySnapshot = await getDocs(q);
+
+      const historialTemp: any[] = [];
+
+      const promises = querySnapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+
+        // Filtramos solo los turnos que están ATENDIDOS y tienen HISTORIA
+        if (data['estado'] === 'atendido' && data['historia']) {
+          let especialistaNombre = 'Especialista';
+          let especialidadAtencion = data['especialidad'] || '';
+
+          // Intentar obtener nombre del especialista
+          if (data['id_especialista']) {
+            try {
+              const espRef = doc(this.firestore, `usuarios/${data['id_especialista']}`);
+              const espSnap = await getDoc(espRef);
+              if (espSnap.exists()) {
+                const espData = espSnap.data();
+                especialistaNombre = `${espData['nombre']} ${espData['apellido']}`;
+              }
+            } catch (e) { /* ignorar error silencioso */ }
+          }
+
+          // Normalizar fecha
+          let fechaDate = new Date();
+          if (data['fechaHora']?.seconds) {
+            fechaDate = new Date(data['fechaHora'].seconds * 1000);
+          } else if (typeof data['fechaHora'] === 'string') {
+            fechaDate = new Date(data['fechaHora']);
+          }
+
+          historialTemp.push({
+            id: docSnap.id,
+            fecha: fechaDate,
+            fechaStr: fechaDate.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            especialista: especialistaNombre,
+            especialidad: especialidadAtencion,
+            resenia: data['resenia'] || '',
+            diagnostico: data['diagnostico'] || '',
+            // Datos clínicos
+            altura: data['historia'].altura,
+            peso: data['historia'].peso,
+            temperatura: data['historia'].temperatura,
+            presion: data['historia'].presion,
+            dinamicos: data['historia'].dinamicos || [],
+            opcionales: data['historia'].opcionales || []
+          });
+        }
+      });
+
+      await Promise.all(promises);
+      // Ordenar: más reciente primero
+      return historialTemp.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
+    } catch (error) {
+      console.error('Error en UsersService.getHistorialClinico:', error);
+      throw error;
     }
   }
 }

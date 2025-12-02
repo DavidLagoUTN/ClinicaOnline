@@ -8,6 +8,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LoadingComponent } from '../../componentes/loading/loading';
 import { AuthService } from '../../servicios/auth';
 import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+// Importamos el servicio de turnos para guardar el log
+import { TurnosService } from '../../servicios/turnos.service';
 
 interface QuickUser {
   uid: string;
@@ -51,7 +53,8 @@ export class Login implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private turnosService: TurnosService // Inyectamos el servicio
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -60,41 +63,41 @@ export class Login implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-  await this.loadQuickUsersPhotos();
-  console.log('quickUsers after load:', this.quickUsers); // debug
-}
+    await this.loadQuickUsersPhotos();
+    console.log('quickUsers after load:', this.quickUsers);
+  }
 
-private async loadQuickUsersPhotos(): Promise<void> {
-  const defaultAvatar = '/assets/default-avatar.png';
-  await Promise.all(this.quickUsers.map(async (u, idx) => {
-    u.photoUrl = u.photoUrl || defaultAvatar;
-    if (!u.uid) return;
-    try {
-      const ref = doc(this.firestore, 'usuarios', u.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        console.warn(`user doc not found for uid ${u.uid}`);
-        return;
+  private async loadQuickUsersPhotos(): Promise<void> {
+    const defaultAvatar = '/assets/default-avatar.png';
+    await Promise.all(this.quickUsers.map(async (u, idx) => {
+      u.photoUrl = u.photoUrl || defaultAvatar;
+      if (!u.uid) return;
+      try {
+        const ref = doc(this.firestore, 'usuarios', u.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          console.warn(`user doc not found for uid ${u.uid}`);
+          return;
+        }
+        const data = snap.data() as Record<string, any>;
+        const candidate =
+          data['imagenPerfil'] ||
+          data['imagenPerfilExtra'] ||
+          data['photoURL'] ||
+          data['foto'] ||
+          data['avatar'];
+        if (candidate && typeof candidate === 'string' && candidate.trim()) {
+          u.photoUrl = candidate;
+        } else if (Array.isArray(data['imagenes']) && data['imagenes'].length) {
+          u.photoUrl = data['imagenes'][0];
+        }
+        if ((!u.label || u.label === '') && data['nombre']) u.label = String(data['nombre']);
+        if ((!u.email || u.email === '') && data['mail']) u.email = String(data['mail']);
+      } catch (e) {
+        console.error('error loading user', u.uid, e);
       }
-      const data = snap.data() as Record<string, any>;
-      const candidate =
-        data['imagenPerfil'] ||
-        data['imagenPerfilExtra'] ||
-        data['photoURL'] ||
-        data['foto'] ||
-        data['avatar'];
-      if (candidate && typeof candidate === 'string' && candidate.trim()) {
-        u.photoUrl = candidate;
-      } else if (Array.isArray(data['imagenes']) && data['imagenes'].length) {
-        u.photoUrl = data['imagenes'][0];
-      }
-      if ((!u.label || u.label === '') && data['nombre']) u.label = String(data['nombre']);
-      if ((!u.email || u.email === '') && data['mail']) u.email = String(data['mail']);
-    } catch (e) {
-      console.error('error loading user', u.uid, e);
-    }
-  }));
-}
+    }));
+  }
 
 
   async submitLogin() {
@@ -123,7 +126,27 @@ private async loadQuickUsersPhotos(): Promise<void> {
 
     this.isLoading = true;
     try {
-      await this.authService.login(email, password);
+      // 1. Login con Auth
+      const credential = await this.authService.login(email, password);
+      
+      // 2. Obtener datos para el LOG y Guardar
+      if (credential.user) {
+        const uid = credential.user.uid;
+        const userDocRef = doc(this.firestore, 'usuarios', uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          // Guardamos el log usando el servicio
+          this.turnosService.guardarLogIngreso({
+            uid: uid,
+            nombre: userData['nombre'],
+            apellido: userData['apellido'],
+            tipo: userData['tipo']
+          });
+        }
+      }
+
       this.snackBar.open('Inicio de sesión exitoso', undefined, { duration: 3000, panelClass: ['snackbar-success'] });
       this.router.navigate(['/home']);
     } catch (err: any) {

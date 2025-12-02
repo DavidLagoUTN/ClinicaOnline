@@ -3,41 +3,27 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Pipe({
   name: 'resaltar',
-  standalone: true
+  standalone: true, 
 })
 export class ResaltarPipe implements PipeTransform {
   constructor(private sanitizer: DomSanitizer) {}
 
-  transform(
-    texto: string | null | undefined,
-    busqueda: string | null | undefined,
-    sensibleAMayusculas = false
-  ): SafeHtml {
-    if (!texto) return '';
-    if (!busqueda) {
-      return this.sanitizer.bypassSecurityTrustHtml(this.escapeHtml(texto));
+  transform(value: string, args?: any): SafeHtml {
+    if (!value) return '';
+    // Ejemplo: Si el valor es 'cancelado', lo pone en rojo y negrita
+    if (value.toLowerCase() === 'cancelado') {
+      return this.sanitizer.bypassSecurityTrustHtml(
+        `<span style="color: red; font-weight: bold;">${value}</span>`
+      );
+    }
+    // Si el valor es 'realizado', lo pone en verde
+    if (value.toLowerCase() === 'realizado') {
+      return this.sanitizer.bypassSecurityTrustHtml(
+        `<span style="color: green; font-weight: bold;">${value}</span>`
+      );
     }
 
-    const flags = sensibleAMayusculas ? 'g' : 'gi';
-    const escapedSearch = this.escapeRegExp(String(busqueda));
-    const re = new RegExp(escapedSearch, flags);
-
-    const escapedText = this.escapeHtml(texto);
-    const resaltado = escapedText.replace(re, match => `<mark>${match}</mark>`);
-
-    return this.sanitizer.bypassSecurityTrustHtml(resaltado);
-  }
-
-  private escapeRegExp(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  private escapeHtml(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    // Si no es ninguno especial, devuelve el texto normal
+    return value;
   }
 }

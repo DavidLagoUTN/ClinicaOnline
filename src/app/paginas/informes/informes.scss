@@ -1,0 +1,166 @@
+:host {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+/* Contenedor principal */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Espacio entre secciones */
+  padding: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Tarjeta contenedora (Estilo 'tarjeta-mis-turnos') */
+.informe-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border: 3px solid #104ea7;
+  border-radius: 8px;
+  background-color: hsla(197, 54%, 55%, 0.85); /* Fondo azulado */
+  box-sizing: border-box;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+
+    h2, h3, h5 {
+      margin: 0;
+      font-size: inherit;
+    }
+  }
+
+  /* Cuerpo interno blanco (Estilo 'turno-card' adaptado) */
+  .card-body-internal {
+    background: rgba(240, 248, 255, 0.95);
+    border: 2px solid rgba(16, 78, 167, 0.15);
+    border-radius: 10px;
+    padding: 1rem;
+    color: #06314f;
+    min-height: 200px; /* Altura mínima para gráficos */
+  }
+}
+
+/* Layout de columnas para gráficos */
+.chart-row {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  .chart-col {
+    flex: 1;
+    min-width: 300px; /* Para móviles */
+  }
+}
+
+/* Tablas (Logs) */
+.table-responsive {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(16, 78, 167, 0.1);
+  }
+
+  th {
+    background-color: rgba(16, 78, 167, 0.1);
+    color: #06314f;
+    font-weight: 800;
+    position: sticky;
+    top: 0;
+  }
+
+  tr:hover {
+    background-color: rgba(16, 78, 167, 0.05);
+  }
+}
+
+/* Filtros */
+.filtros-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+
+  .form-group {
+    flex: 1;
+    min-width: 150px;
+
+    label {
+      display: block;
+      font-weight: 700;
+      color: #06314f;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(16, 78, 167, 0.3);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+  }
+}
+
+/* Botones (Estilo heredado de tu código) */
+button {
+  background-color: #104ea7;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  &:hover {
+    background-color: #0d3c85;
+  }
+}
+
+.btn-success {
+  background-color: #27ae60;
+  &:hover { background-color: #219150; }
+}
+
+.btn-danger {
+  background: #c0392b;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  &:hover { background-color: #a93226; }
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Canvas responsive */
+canvas {
+  max-width: 100%;
+  max-height: 100%;
+}

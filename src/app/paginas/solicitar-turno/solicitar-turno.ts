@@ -5,6 +5,7 @@ import { Auth } from '@angular/fire/auth';
 import { Firestore, collection, collectionData, query, where, addDoc } from '@angular/fire/firestore';
 import { doc, updateDoc, arrayUnion, getDocs } from 'firebase/firestore';
 import { firstValueFrom, Observable } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar'; // Importar MatSnackBar
 import { generarTurnosDesdeRango, hhmmAminutos } from '../../utils/horario.utils';
 import { Navbar } from "../../componentes/navbar/navbar";
 import { LoadingComponent } from "../../componentes/loading/loading";
@@ -74,7 +75,11 @@ export class SolicitarTurno implements OnInit {
 
   reservando = false;
 
-  constructor(private firestore: Firestore, private auth: Auth) { }
+  constructor(
+    private firestore: Firestore,
+    private auth: Auth,
+    private snackBar: MatSnackBar // Inyectar MatSnackBar
+  ) { }
 
   async ngOnInit() {
     await this.cargarEspecialistas();
@@ -153,24 +158,24 @@ export class SolicitarTurno implements OnInit {
   }
 
   seleccionarPaciente(p: { id: string; nombre: string; apellido: string; imagenPerfil?: string | null }) {
-  // marcar que el admin ya vio/solicitó ver especialistas
-  this.adminVioEspecialistas = true;
+    // marcar que el admin ya vio/solicitó ver especialistas
+    this.adminVioEspecialistas = true;
 
-  // si clickeás el mismo paciente, no hacemos nada (no deselecciona)
-  if (this.pacienteSeleccionadoId === p.id) {
-    return;
+    // si clickeás el mismo paciente, no hacemos nada (no deselecciona)
+    if (this.pacienteSeleccionadoId === p.id) {
+      return;
+    }
+
+    // seleccionar un paciente nuevo: limpiamos escalones inferiores para consistencia
+    this.pacienteSeleccionadoId = p.id;
+    this.pacienteSeleccionadoNombre = `${p.nombre} ${p.apellido}`;
+
+    this.seleccionado = null;
+    this.especialidadSeleccionada = null;
+    this.diaSeleccionado = null;
+    this.horariosDisponiblesDia = [];
+    this.horaSeleccionada = null;
   }
-
-  // seleccionar un paciente nuevo: limpiamos escalones inferiores para consistencia
-  this.pacienteSeleccionadoId = p.id;
-  this.pacienteSeleccionadoNombre = `${p.nombre} ${p.apellido}`;
-
-  this.seleccionado = null;
-  this.especialidadSeleccionada = null;
-  this.diaSeleccionado = null;
-  this.horariosDisponiblesDia = [];
-  this.horaSeleccionada = null;
-}
 
 
 
@@ -334,7 +339,7 @@ export class SolicitarTurno implements OnInit {
     // UID del paciente actual
     const uidPaciente = this.pacienteSeleccionadoId ?? this.auth.currentUser?.uid;
     if (!uidPaciente) {
-      alert('No se pudo identificar al paciente. Iniciá sesión o seleccioná un paciente (administrador).');
+      this.snackBar.open('No se pudo identificar al paciente. Iniciá sesión o seleccioná un paciente (administrador).', undefined, { duration: 4000, panelClass: ['snackbar-error'] });
       return;
     }
 
@@ -364,13 +369,13 @@ export class SolicitarTurno implements OnInit {
         return data.estado !== 'cancelado';
       });
       if (ocupados) {
-        alert('Ese horario ya está reservado para el especialista. Elegí otro horario.');
+        this.snackBar.open('Ese horario ya está reservado para el especialista. Elegí otro horario.', undefined, { duration: 4000, panelClass: ['snackbar-warn'] });
         this.horaSeleccionada = null;
         return;
       }
     } catch (err) {
       console.error('Error comprobando turnos existentes del especialista', err);
-      alert('No se pudo comprobar disponibilidad del especialista. Intentá de nuevo en un momento.');
+      this.snackBar.open('No se pudo comprobar disponibilidad del especialista. Intentá de nuevo en un momento.', undefined, { duration: 4000, panelClass: ['snackbar-error'] });
       return;
     }
 
@@ -399,14 +404,14 @@ export class SolicitarTurno implements OnInit {
         });
 
         if (overlapFound) {
-          alert('Tenés un turno que se superpone con este horario. No podés sacar dos turnos solapados.');
+          this.snackBar.open('Tenés un turno que se superpone con este horario. No podés sacar dos turnos solapados.', undefined, { duration: 4000, panelClass: ['snackbar-warn'] });
           this.horaSeleccionada = null;
           return;
         }
       }
     } catch (err) {
       console.error('Error comprobando turnos del paciente', err);
-      alert('No se pudo comprobar tus turnos. Intentá de nuevo en un momento.');
+      this.snackBar.open('No se pudo comprobar tus turnos. Intentá de nuevo en un momento.', undefined, { duration: 4000, panelClass: ['snackbar-error'] });
       return;
     }
 
@@ -437,7 +442,7 @@ export class SolicitarTurno implements OnInit {
       await updateDoc(especialistaDocRef, { turnos: arrayUnion(docRef.id) } as any);
 
       this.reservando = false;
-      alert('Turno solicitado correctamente');
+      this.snackBar.open('Turno solicitado correctamente', undefined, { duration: 4000, panelClass: ['snackbar-success'] });
 
       // resetear selección al completar
       this.seleccionado = null;
@@ -448,7 +453,7 @@ export class SolicitarTurno implements OnInit {
     } catch (err) {
       console.error('Error creando turno', err);
       this.reservando = false;
-      alert('Error al solicitar turno');
+      this.snackBar.open('Error al solicitar turno', undefined, { duration: 4000, panelClass: ['snackbar-error'] });
     }
   }
 

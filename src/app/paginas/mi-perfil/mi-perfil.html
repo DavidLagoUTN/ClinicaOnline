@@ -7,6 +7,7 @@
   <div class="app-container">
     <h2 class="titulo2">Datos del {{ tipo }}</h2>
 
+    <!-- Datos Personales -->
     <div class="fila">
       <div *ngIf="imagenPerfil">
         <img [src]="imagenPerfil" [alt]="nombre + ' ' + apellido" class="profile-img" />
@@ -94,105 +95,9 @@
           </details>
         </div>
 
-        <!-- Obra social y sección historia clínica (solo pacientes) -->
+        <!-- Obra social (solo pacientes) -->
         <div *ngIf="tipo === 'paciente'">
           <p *ngIf="obraSocial"><span class="campo">Obra social:</span> <span class="contenido">{{ obraSocial }}</span></p>
-
-          <!-- Contenedor de historia clínica: bordeado y separado -->
-          <div class="historia-contenedor" id="historia-{{uid}}" aria-live="polite" style="margin-top:12px;">
-            <div *ngIf="loadingHistoriaMap[uid]" class="muted">Cargando historia clínica...</div>
-
-            <!-- Mensaje cuando no hay registros -->
-            <div *ngIf="!loadingHistoriaMap[uid] && (!historiasMap[uid] || (historiasMap[uid] && historiasMap[uid].length === 0))"
-                 class="muted">No hay registros en la historia clínica.</div>
-
-            <!-- Lista de entradas (cuando historiasMap[uid] es array) -->
-            <div *ngIf="!loadingHistoriaMap[uid] && historiasMap[uid] && (historiasMap[uid].length !== undefined)">
-              <div *ngFor="let h of historiasMap[uid]" class="historia-separada" style="padding:10px 10px; border-bottom:1px solid #f3f3f3;">
-                <div class="historia-header" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
-                  <strong class="historia-title">Historia Clínica</strong>
-                </div>
-
-                <div class="historia-grid" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px;">
-                  <div class="historia-item" style="min-width:140px;">
-                    <div class="label muted">Peso</div>
-                    <div class="value">{{ h.peso ?? '—' }} kg</div>
-                  </div>
-
-                  <div class="historia-item" style="min-width:140px;">
-                    <div class="label muted">Altura</div>
-                    <div class="value">{{ h.altura ?? '—' }} cm</div>
-                  </div>
-
-                  <div class="historia-item" style="min-width:140px;">
-                    <div class="label muted">Temperatura</div>
-                    <div class="value">{{ h.temperatura ?? '—' }} °C</div>
-                  </div>
-
-                  <div class="historia-item" style="min-width:140px;">
-                    <div class="label muted">Presión</div>
-                    <div class="value">{{ h.presion ?? '—' }} mmHg</div>
-                  </div>
-                </div>
-
-                <div *ngIf="(h.dinamicos || []).length > 0" class="historia-dinamicos" style="margin-top:8px;">
-                  <div class="cancel-label muted" style="margin-bottom:6px;">Datos adicionales</div>
-                  <div class="dinamicos-list">
-                    <div *ngFor="let d of h.dinamicos" class="cancel-text" style="margin-bottom:4px;">
-                      <strong>{{ d.clave }}:</strong> {{ d.valor }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Entrada única (cuando historiasMap[uid] es objeto) -->
-            <div *ngIf="!loadingHistoriaMap[uid] && historiasMap[uid] && (historiasMap[uid].length === undefined)" class="historia-separada" style="padding:10px 0;">
-              <div class="historia-header" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
-                <strong class="historia-title">Historia Clínica</strong>
-              </div>
-
-              <div class="historia-grid" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px;">
-                <div class="historia-item" style="min-width:140px;">
-                  <div class="label muted">Peso</div>
-                  <div class="value">{{ historiasMap[uid].peso ?? '—' }} kg</div>
-                </div>
-
-                <div class="historia-item" style="min-width:140px;">
-                  <div class="label muted">Altura</div>
-                  <div class="value">{{ historiasMap[uid].altura ?? '—' }} cm</div>
-                </div>
-
-                <div class="historia-item" style="min-width:140px;">
-                  <div class="label muted">Temperatura</div>
-                  <div class="value">{{ historiasMap[uid].temperatura ?? '—' }} °C</div>
-                </div>
-
-                <div class="historia-item" style="min-width:140px;">
-                  <div class="label muted">Presión</div>
-                  <div class="value">{{ historiasMap[uid].presion ?? '—' }}</div>
-                </div>
-              </div>
-
-              <div *ngIf="(historiasMap[uid].dinamicos || []).length > 0" class="historia-dinamicos" style="margin-top:8px;">
-                <div class="cancel-label muted" style="margin-bottom:6px;">Datos adicionales</div>
-                <div class="dinamicos-list">
-                  <div *ngFor="let d of historiasMap[uid].dinamicos" class="cancel-text" style="margin-bottom:4px;">
-                    <strong>{{ d.clave }}:</strong> {{ d.valor }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Botón para descargar PDF (dentro del contenedor que se captura) -->
-          <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
-            <button class="btn-save"
-                    (click)="downloadHistoriaPdf(uid)"
-                    [disabled]="loadingHistoriaMap[uid] || generandoPdfMap[uid]">
-              Descargar PDF
-            </button>
-          </div>
-          <!-- fin historia-contenedor -->
         </div>
       </div>
 
@@ -201,12 +106,116 @@
       </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- HISTORIA CLÍNICA (Solo Pacientes)              -->
+    <!-- ============================================== -->
+    <div *ngIf="tipo === 'paciente'" style="margin-top:20px;">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+           <h2 class="titulo2" style="margin:0;">Historia Clínica</h2>
+           
+           <div *ngIf="!loadingHistorial && historialClinico.length > 0" style="display:flex; gap:8px; align-items:center;">
+             <!-- Selector de Especialidad con ESTILO MEJORADO -->
+             <select [(ngModel)]="especialidadSeleccionada" 
+                     style="padding: 8px 12px; border: 2px solid #104ea7; border-radius: 6px; color: #083049; font-weight: 600; outline: none; background-color: #f0f8ff; cursor:pointer; min-width:200px;">
+                <option value="todas">Todas las especialidades</option>
+                <option *ngFor="let esp of especialidadesDisponiblesHistorial" [value]="esp">{{ esp }}</option>
+             </select>
+
+             <button class="btn-save" (click)="downloadHistoriaPdf()" 
+                     [disabled]="loadingHistorial || generandoPdf">
+                {{ generandoPdf ? 'Generando PDF...' : 'Descargar PDF' }}
+             </button>
+           </div>
+        </div>
+
+        <div class="historia-contenedor" id="historia-clinica-container" aria-live="polite">
+            <div *ngIf="loadingHistorial" class="muted">Cargando historia clínica...</div>
+
+            <div *ngIf="!loadingHistorial && historialClinico.length === 0" 
+                 class="historia-card" 
+                 style="background: rgba(240, 248, 255, 0.8); border: 2px solid #104ea7; border-radius: 8px; padding: 20px; text-align: center; color: #083049; font-weight: 500;">
+                No hay registros médicos finalizados aún.
+            </div>
+
+            <!-- Iteramos sobre historialClinico con el diseño NUEVO -->
+            <div *ngFor="let item of historialClinico" class="historia-card" style="background: rgba(240, 248, 255, 0.8); border: 2px solid #104ea7; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                
+                <!-- Header con Fecha y Especialista -->
+                <div class="historia-header" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid rgba(16, 78, 167, 0.2); padding-bottom: 10px; margin-bottom: 12px;">
+                   <div style="display:flex; flex-direction: column;">
+                      <strong class="historia-title" style="font-size: 1.1rem; font-weight: 800; color: #104ea7; text-transform: capitalize;">{{ item.fechaStr }}</strong>
+                      <span class="historia-meta" style="margin-top: 4px; color: #083049;">Atendido por: <strong>{{ item.especialista }}</strong></span>
+                   </div>
+                   <div class="historia-meta" style="text-align: right;">
+                      <span style="display: block; font-size: 0.75rem; color: #104ea7; text-transform: uppercase; font-weight: 700;">Especialidad</span>
+                      <strong style="color: #083049;">{{ item.especialidad }}</strong>
+                   </div>
+                </div>
+
+                <!-- Grid de Datos Fijos (Peso, Altura...) -->
+                <!-- AHORA: Grid de 4 columnas fijas para que sea más ancho y bajito -->
+                <div class="historia-datos-fijos" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+                  <div class="dato-box" style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #90caf9;">
+                    <div class="label" style="display: block; font-size: 0.75rem; color: #104ea7; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Altura</div>
+                    <div class="value" style="display: block; font-weight: 800; font-size: 1.1rem; color: #06314f;">{{ item.altura ?? '—' }} cm</div>
+                  </div>
+                  <div class="dato-box" style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #90caf9;">
+                    <div class="label" style="display: block; font-size: 0.75rem; color: #104ea7; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Peso</div>
+                    <div class="value" style="display: block; font-weight: 800; font-size: 1.1rem; color: #06314f;">{{ item.peso ?? '—' }} kg</div>
+                  </div>
+                  <div class="dato-box" style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #90caf9;">
+                    <div class="label" style="display: block; font-size: 0.75rem; color: #104ea7; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Temperatura</div>
+                    <div class="value" style="display: block; font-weight: 800; font-size: 1.1rem; color: #06314f;">{{ item.temperatura ?? '—' }} °C</div>
+                  </div>
+                  <div class="dato-box" style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #90caf9;">
+                    <div class="label" style="display: block; font-size: 0.75rem; color: #104ea7; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Presión</div>
+                    <div class="value" style="display: block; font-weight: 800; font-size: 1rem; color: #06314f; white-space: nowrap;">{{ item.presion ?? '—' }} mmHg</div>
+                  </div>
+                </div>
+
+                <!-- 1. Datos Adicionales (Dinámicos Fijos: los 3 obligatorios) -->
+                <div *ngIf="(item.dinamicos || []).length > 0" class="historia-seccion" style="background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 6px; border: 1px solid rgba(16, 78, 167, 0.15); margin-bottom: 10px;">
+                  <span class="seccion-titulo" style="font-size: 0.9rem; font-weight: 700; color: #104ea7; margin-bottom: 8px; display: block; text-transform: uppercase;">Datos adicionales</span>
+                  <div class="items-list" style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    <div *ngFor="let d of item.dinamicos" class="item-dato" style="font-size: 0.95rem; color: #083049; background: rgba(50, 159, 202, 0.1); padding: 4px 8px; border-radius: 4px;">
+                      <strong>{{ d.clave }}:</strong> {{ formatearValorDinamico(d.valor) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Datos Opcionales (Separados con su propio título) -->
+                <div *ngIf="(item.opcionales || []).length > 0" class="historia-seccion" style="background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 6px; border: 1px solid rgba(16, 78, 167, 0.15); margin-bottom: 10px;">
+                  <span class="seccion-titulo" style="font-size: 0.9rem; font-weight: 700; color: #104ea7; margin-bottom: 8px; display: block; text-transform: uppercase;">Datos opcionales</span>
+                  <div class="items-list" style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    <div *ngFor="let op of item.opcionales" class="item-dato" style="font-size: 0.95rem; color: #083049; background: rgba(50, 159, 202, 0.1); padding: 4px 8px; border-radius: 4px;">
+                      <strong>{{ op.clave }}:</strong> {{ formatearValorDinamico(op.valor) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Diagnóstico -->
+                <div *ngIf="item.diagnostico" class="historia-seccion" style="background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 6px; border: 1px solid rgba(16, 78, 167, 0.15); margin-bottom: 10px;">
+                    <span class="seccion-titulo" style="font-size: 0.9rem; font-weight: 700; color: #104ea7; margin-bottom: 8px; display: block; text-transform: uppercase;">Diagnóstico</span>
+                    <div class="texto-bloque" style="font-size: 0.95rem; color: #06314f; line-height: 1.5; white-space: pre-wrap;">{{ item.diagnostico }}</div>
+                </div>
+                
+                <!-- 4. Reseña -->
+                <div *ngIf="item.resenia" class="historia-seccion" style="background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 6px; border: 1px solid rgba(16, 78, 167, 0.15); margin-bottom: 10px;">
+                    <span class="seccion-titulo" style="font-size: 0.9rem; font-weight: 700; color: #104ea7; margin-bottom: 8px; display: block; text-transform: uppercase;">Reseña del especialista</span>
+                    <div class="texto-bloque" style="font-size: 0.95rem; color: #06314f; line-height: 1.5; white-space: pre-wrap;">{{ item.resenia }}</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- Sección Mis horarios: sólo para especialistas -->
     <div *ngIf="tipo === 'especialista'">
-      <h2 class="titulo">Mis horarios</h2>
+      <h2 class="titulo" style="margin-top:20px;">Mis horarios</h2>
 
-      <div *ngIf="tieneHorarios(); else sinHorarios" class="modal">
-        <div class="horario">
+      <div *ngIf="tieneHorarios(); else sinHorarios" class="modal" style="position:static; max-width:100%; box-shadow:none; border:3px solid #104ea7;">
+        <div class="horario" style="border:none; background:transparent; padding:0;">
           <ul class="lista-dias" *ngFor="let dia of dias">
             <ng-container *ngIf="disponibilidadLocal[dia] && disponibilidadLocal[dia].length">
               <strong class="dia">{{ dia | titlecase }}:</strong>
@@ -217,8 +226,8 @@
       </div>
 
       <ng-template #sinHorarios>
-        <div class="modal">
-          <p class="sin-horarios">Sin horarios asignados</p>
+        <div class="modal" style="position:static; max-width:100%; box-shadow:none; border:3px solid #104ea7;">
+          <p class="sin-horarios" style="border:none;">Sin horarios asignados</p>
         </div>
       </ng-template>
 

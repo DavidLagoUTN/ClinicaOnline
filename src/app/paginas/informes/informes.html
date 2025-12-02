@@ -1,0 +1,101 @@
+<app-navbar></app-navbar>
+
+<h1 class="titulo">Informes y Estadísticas</h1>
+<div class="app-container">
+
+  <!-- 1. LOGS DE INGRESO -->
+  <div class="informe-card">
+    <div class="card-header">
+      <h5>Log de Ingresos al Sistema</h5>
+      <button class="btn-success" (click)="descargarExcelLogs()" appAgrandar>
+        <span>Descargar Excel</span>
+      </button>
+    </div>
+    <div class="card-body-internal">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Fecha de Ingreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of logs">
+              <td>{{ log.nombre }} {{ log.apellido }}</td>
+              <td [innerHTML]="log.tipo | titlecase | resaltar"></td>
+              <td>{{ log.fecha | fechaFormato }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. GRÁFICOS GENERALES -->
+  <div class="chart-row">
+    <!-- Especialidades -->
+    <div class="informe-card chart-col" appBordeRedondeado colorBorde="#104ea7">
+      <div class="card-header">Turnos por Especialidad</div>
+      <div class="card-body-internal">
+        <canvas baseChart [data]="dataEspecialidad" [type]="'pie'" [options]="pieChartOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Por Día -->
+    <div class="informe-card chart-col" appBordeRedondeado colorBorde="#104ea7">
+      <div class="card-header">Cantidad de Turnos por Día</div>
+      <div class="card-body-internal">
+        <canvas baseChart [data]="dataPorDia" [type]="'bar'" [options]="barChartOptions"> </canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. FILTRO POR LAPSO DE TIEMPO -->
+  <div class="informe-card">
+    <div class="card-header">Filtrar Médicos por Fecha</div>
+    <div class="card-body-internal">
+      <div class="filtros-row">
+        <div class="form-group">
+          <label>Desde:</label>
+          <input type="date" [(ngModel)]="fechaInicio" />
+        </div>
+        <div class="form-group">
+          <label>Hasta:</label>
+          <input type="date" [(ngModel)]="fechaFin" />
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end">
+          <button class="btn-block" (click)="filtrarPorLapso()" appAgrandar>Aplicar Filtro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. GRÁFICOS DE MÉDICOS -->
+  <div class="chart-row">
+    <div class="informe-card chart-col" appBordeRedondeado colorBorde="#104ea7">
+      <div class="card-header">Turnos Solicitados (Lapso)</div>
+      <div class="card-body-internal">
+        <canvas baseChart [data]="dataMedicoSolicitado" [type]="'bar'" [options]="barChartOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <div class="informe-card chart-col" appBordeRedondeado colorBorde="#104ea7">
+      <div class="card-header">Turnos Finalizados (Lapso)</div>
+      <div class="card-body-internal">
+        <canvas baseChart [data]="dataMedicoFinalizado" [type]="'bar'" [options]="barChartOptions">
+        </canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN PDF -->
+  <div style="margin-top: 1rem; margin-bottom: 3rem">
+    <button class="btn-danger" (click)="descargarPDF()" appAgrandar>
+      Descargar Informe PDF Completo
+    </button>
+  </div>
+</div>

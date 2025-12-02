@@ -175,9 +175,9 @@
   transition: background-color 160ms ease, transform 120ms ease;
 }
 
-.historia-panel{
+.historia-panel {
   padding: 10px;
-  max-height: 800px;
+  /* Eliminamos el max-height para que crezca según el contenido y no se corte */
   margin-top: 8px;
   background: rgba(16, 79, 167, 0.08);
   border: 1px solid rgba(16, 79, 167, 0.293);

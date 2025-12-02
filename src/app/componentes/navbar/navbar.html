@@ -1,6 +1,4 @@
-<div class="navbar"
-     [class.compacto]="hasScroll"
-     [style.--scrollbar-width.px]="scrollbarWidth">
+<div class="navbar" [class.compacto]="hasScroll" [style.--scrollbar-width.px]="scrollbarWidth">
 
   <!-- IZQUIERDA: Inicio + Usuarios (solo si es admin) -->
   <div class="navbar-left">
@@ -11,6 +9,10 @@
 
     <button *ngIf="isLoggedIn && esAdmin" class="usuarios-btn" (click)="router.navigate(['/usuarios'])">
       <span class="navbar-label">Usuarios</span>
+    </button>
+
+    <button *ngIf="isLoggedIn && esAdmin" class="usuarios-btn" (click)="router.navigate(['/informes'])">
+      <span class="navbar-label">Informes</span>
     </button>
 
     <button *ngIf="isLoggedIn && esEspecialista" class="usuarios-btn" (click)="router.navigate(['/pacientes'])">

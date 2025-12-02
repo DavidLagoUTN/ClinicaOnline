@@ -17,10 +17,11 @@
       </button>
     </div>
 
-    <!-- Lista de cards en lugar de tabla -->
+    <!-- Lista de cards -->
     <div class="turnos-list usuarios-cards" *ngIf="!loading">
       <div *ngFor="let u of usuarios; trackBy: trackByUid" class="turno-card paciente-card usuario-card"
         [appFondoPorRol]="u.tipo === 'admin' ? 'administrador' : u.tipo" [destacado]="u.destacado">
+        
         <div class="turno-left">
           <div class="avatar-mini">
             <img [src]="u.imagenPerfil || u.imagenPerfilExtra || '/assets/default-avatar.png'"
@@ -39,28 +40,26 @@
             </div>
           </div>
 
-          <!-- Datos principales (apilados, legibles) -->
+          <!-- Datos principales -->
           <div class="fila-2 datos-turno">
             <div class="dato-row">
               <div class="dato"><span class="muted">Edad:</span> <strong>{{ u.edad ?? '—' }}</strong></div>
             </div>
-
             <div class="dato-row">
               <div class="dato"><span class="muted">DNI:</span> <strong>{{ u.dni || '—' }}</strong></div>
             </div>
-
             <div class="dato-row">
               <div class="dato"><span class="muted">Correo:</span> <strong>{{ u.mail || '—' }}</strong></div>
             </div>
           </div>
 
-          <!-- Acciones / estado de acceso -->
+          <!-- Acciones -->
           <div class="fila-2 datos-turno" style="margin-top:8px;">
             <div class="dato" style="width:100%;">
-              <div class="muted" *ngIf="u.tipo === 'especialista'" style="font-weight:600; margin-bottom:6px;">Acceso
-              </div>
-
-              <div class="access-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+              
+              <div class="access-actions" style="display:flex; gap:8px; flex-wrap:wrap; width:100%;">
+                
+                <!-- Botón Admin -->
                 <div *ngIf="u.tipo === 'especialista'">
                   <button (click)="toggleAprobacion(u)"
                     [ngClass]="u.aprobadoPorAdmin ? 'btn-inhabilitar' : 'btn-habilitar'">
@@ -68,10 +67,10 @@
                   </button>
                 </div>
 
-                <!-- Botones para pacientes -->
-                <div *ngIf="u.tipo === 'paciente'">
+                <!-- Botones para Pacientes -->
+                <div *ngIf="u.tipo === 'paciente'" style="display:flex; gap:8px; width:100%;">
                   <button class="btn-export-turnos" (click)="exportarTurnosPaciente(u)">
-                    Exportar datos de turnos
+                    Exportar turnos
                   </button>
 
                   <button class="btn-ver-historia" (click)="toggleHistoria(u)">
@@ -82,44 +81,72 @@
             </div>
           </div>
 
-          <!-- Panel inline de historia clínica (fuera del bloque de botones para evitar problemas de render) -->
+          <!-- Panel de Historia Clínica -->
           <div *ngIf="u.tipo === 'paciente' && showHistoriaMap[u.uid]" class="historia-panel"
-            style="margin-top:8px; padding:8px; border:1px solid #eee;">
+            style="margin-top:12px; padding:12px; border:2px solid #104ea7; background-color: rgba(240, 248, 255, 0.95); border-radius:8px;">
+            
             <div *ngIf="historiaLoadingMap[u.uid]" class="muted">Cargando historia clínica...</div>
 
             <div *ngIf="!historiaLoadingMap[u.uid] && (!historiaDataMap[u.uid] || historiaDataMap[u.uid].length === 0)"
-              class="muted">
+              class="muted" style="text-align:center; padding:10px;">
               No hay registros en la historia clínica.
             </div>
 
             <ng-container *ngIf="historiaDataMap[u.uid] && historiaDataMap[u.uid].length > 0">
-              <div *ngFor="let h of historiaDataMap[u.uid]" style="margin-bottom:12px;">
+              <div *ngFor="let h of historiaDataMap[u.uid]" 
+                   style="margin-bottom:12px; border-bottom:1px solid #104ea7; padding-bottom:12px;">
+
+                <!-- Encabezado de la atención -->
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#104ea7; font-size:0.95rem;">
+                    <strong>{{ h.fechaStr }}</strong>
+                    <span style="text-transform:uppercase; font-weight:700;">{{ h.especialidad }}</span>
+                </div>
+                <div style="font-size:0.85rem; color:#666; margin-bottom:8px;">
+                    Atendido por: <strong>{{ h.especialista }}</strong>
+                </div>
 
                 <!-- Campos estáticos -->
-                <div class="fila-2 datos-turno" style="margin-top:6px;">
-                  <strong>Historia Clínica</strong>
-                  <div class="dato-row">
-                    <div class="dato"><span class="muted">Peso:</span> <strong>{{ h.peso ?? '—' }} kg</strong></div>
-                  </div>
-                  <div class="dato-row">
-                    <div class="dato"><span class="muted">Altura:</span> <strong>{{ h.altura ?? '—' }} cm</strong></div>
-                  </div>
-                  <div class="dato-row">
-                    <div class="dato"><span class="muted">Temperatura:</span> <strong>{{ h.temperatura ?? '—' }}
-                        °C</strong></div>
-                  </div>
-                  <div class="dato-row">
-                    <div class="dato"><span class="muted">Presión:</span> <strong>{{ h.presion ?? '—' }} mmHg</strong>
-                    </div>
-                  </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; background:#e3f2fd; padding:8px; border-radius:6px; border:1px solid #90caf9;">
+                  <div class="dato"><span class="muted" style="font-size:0.8rem; color:#104ea7; font-weight:700;">PESO:</span> <strong>{{ h.peso ?? '—' }} kg</strong></div>
+                  <div class="dato"><span class="muted" style="font-size:0.8rem; color:#104ea7; font-weight:700;">ALTURA:</span> <strong>{{ h.altura ?? '—' }} cm</strong></div>
+                  <div class="dato"><span class="muted" style="font-size:0.8rem; color:#104ea7; font-weight:700;">TEMP:</span> <strong>{{ h.temperatura ?? '—' }} °C</strong></div>
+                  <div class="dato"><span class="muted" style="font-size:0.8rem; color:#104ea7; font-weight:700;">PRESIÓN:</span> <strong>{{ h.presion ?? '—' }} mmHg</strong></div>
                 </div>
 
                 <!-- Datos dinámicos -->
                 <div *ngIf="(h.dinamicos || []).length > 0" style="margin-top:8px;">
-                  <div class="cancel-label muted">Datos adicionales</div>
-                  <div *ngFor="let d of h.dinamicos">
-                    <div class="cancel-text"><strong>{{ d.clave }}:</strong> {{ d.valor }}</div>
+                  <div class="cancel-label muted" style="color:#104ea7; font-weight:700; font-size:0.85rem;">Datos Clínicos:</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <span *ngFor="let d of h.dinamicos" style="background:rgba(255,255,255,0.6); padding:2px 6px; border-radius:4px; font-size:0.9rem;">
+                        <span style="color:#104ea7; font-weight:700;">{{ d.clave }}:</span> {{ formatearValorDinamico(d.valor) }}
+                    </span>
                   </div>
+                </div>
+
+                <!-- Datos opcionales -->
+                <div *ngIf="(h.opcionales || []).length > 0" style="margin-top:8px;">
+                    <div class="cancel-label muted" style="color:#104ea7; font-weight:700; font-size:0.85rem;">Datos Opcionales:</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                      <span *ngFor="let o of h.opcionales" style="background:rgba(255,255,255,0.6); padding:2px 6px; border-radius:4px; font-size:0.9rem;">
+                          <span style="color:#104ea7; font-weight:700;">{{ o.clave }}:</span> {{ formatearValorDinamico(o.valor) }}
+                      </span>
+                    </div>
+                </div>
+
+                <!-- Diagnóstico -->
+                <div *ngIf="h.diagnostico" style="margin-top:8px;">
+                    <div class="cancel-label muted" style="color:#104ea7; font-weight:700; font-size:0.85rem;">Diagnóstico:</div>
+                    <div style="background:rgba(227, 242, 253, 0.5); padding:6px; border-radius:4px; font-size:0.9rem; border:1px solid #bbdefb;">
+                        {{ h.diagnostico }}
+                    </div>
+                </div>
+
+                <!-- Reseña -->
+                <div *ngIf="h.resenia" style="margin-top:8px;">
+                    <div class="cancel-label muted" style="color:#104ea7; font-weight:700; font-size:0.85rem;">Reseña:</div>
+                    <div style="background:rgba(240, 248, 255, 0.8); padding:6px; border-radius:4px; font-size:0.9rem; border:1px solid #d0e4ff;">
+                        {{ h.resenia }}
+                    </div>
                 </div>
 
               </div>
